@@ -103,5 +103,56 @@ for(beta in beta_qs){
 ### Q3
 
 ```{r}
+set.seed(2023)
+f_x=function(x,sig=0){
+  epsi=rnorm(1,0,sig)
+  
+  if(x<0){
+    target=abs(x+1)-0.5
+    return (target+epsi)
+    
+  }
+  if(x>=0){
+    target=abs(x-1)-0.5
+    
+    return(target+sig)
+    
+  }
+}
+
+# Simulte 5 time
+n_sim=seq(1,5,1)
+N=5
+
+plot(NULL, xlim=c(-2,2),ylim=c(-1,1),xlab='xi',ylab='f(xi)',main='Target Function Simulation')
+
+colours=c('green','blue','lightblue','orange','red')
+for(i in seq_along(n_sim)){
+  xi=sort(runif(N,-2,2))
+  y=sapply(xi,f_x)
+  lines( y~xi,lwd=1,col=colours[1])
+  points(y~xi,lwd=1,col=colours[1],pch=1)
+  
+  h1=lm(y~xi)
+  h1_predict=unname(predict(h1,data.frame(xi)))
+  lines(h1_predict~xi,lwd=1,col=colours[3])
+  points(h1_predict~xi,lwd=1,col=colours[3],pch=1)
+  
+  h2=lm(y~sin(pi*xi)+cos(pi*xi))
+  h2_predict=unname(predict(h2,data.frame(xi)))
+  lines(h2_predict~xi,lwd=1,col=colours[4])
+  points(h2_predict~xi,lwd=1,col=colours[4],pch=1)
+  
+  
+  
+  
+  
+}
+
+# Hypotheses
+
+
+
+
 
 ```
