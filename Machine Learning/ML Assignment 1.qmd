@@ -124,35 +124,208 @@ f_x=function(x,sig=0){
 n_sim=seq(1,5,1)
 N=5
 
-plot(NULL, xlim=c(-2,2),ylim=c(-1,1),xlab='xi',ylab='f(xi)',main='Target Function Simulation')
+plot(NULL, axes = FALSE, xlim=c(-2,2),ylim=c(-0.5,0.5),xlab='xi',ylab='f(xi)',main='Target Function Simulation')
+axis(1, pos = 0)
+axis(2, pos = 0)
 
 colours=c('green','blue','lightblue','orange','red')
 for(i in seq_along(n_sim)){
   xi=sort(runif(N,-2,2))
   y=sapply(xi,f_x)
-  lines( y~xi,lwd=1,col=colours[1])
-  points(y~xi,lwd=1,col=colours[1],pch=1)
+  #lines( y~xi,lwd=2,col=colours[1])
+  points(y~xi,lwd=2,col=colours[1],pch=1)
   
+  # Plot Hypotheses
   h1=lm(y~xi)
   h1_predict=unname(predict(h1,data.frame(xi)))
-  lines(h1_predict~xi,lwd=1,col=colours[3])
-  points(h1_predict~xi,lwd=1,col=colours[3],pch=1)
-  
+  #lines(h1_predict~xi,lwd=2,col=colours[3])
+  points(h1_predict~xi,lwd=2,col=colours[3],pch=1)
+  # 
   h2=lm(y~sin(pi*xi)+cos(pi*xi))
   h2_predict=unname(predict(h2,data.frame(xi)))
-  lines(h2_predict~xi,lwd=1,col=colours[4])
+  #lines(h2_predict~xi,lwd=1,col=colours[4])
   points(h2_predict~xi,lwd=1,col=colours[4],pch=1)
-  
-  
-  
-  
+  # 
   
 }
 
-# Hypotheses
+legend("bottomright", 
+       legend = c("f(x)", "H1", "H2"), # Text labels
+       col = c(colours[1],colours[3],colours[4]),                           
+       pch = 1, 
+       cex=0.85,
+       title = "Sample Plots",
+       bty='n')  
 
 
 
 
+
+
+
+```
+
+```{r}
+ h1
+```
+
+b\) Given that the underlying data generating process is non-linear, the non-linear hypothesis would be more suited to fit the data
+
+c\)
+
+```{r}
+library(dplyr)
+library(tidyverse)
+
+# Funtion Arg
+# f_tru: True DGP
+# hyp: Hypothesis function
+# sig: nr of std deviation from mean
+# N: size of data
+# nsim= nr of simulations/draws
+
+oos_estimate=function(f_true,hyp,sig,N, nsim=1000){
+  
+  #RHS BV trade-off
+  bias_store=c()
+  prediction_sim_store=matrix(NA,nrow=N,ncol=nsim) # store predictions for each simulation in this matrix,col= prediction at simulation i
+  pred_var_score=c()
+  oos_err_store=c()
+  for(i in 1:nsim){
+      xi=sort(runif(N,-2,2)) # sample N samples
+      y=sapply(xi,f_x) # apply the f_true
+      
+      h_predict=unname(predict(hyp,data.frame(xi))) # get prediction of the hypothesis on the sample
+      
+      # Calculate the bias at draw i
+      bias_i= (y-h_predict)**2
+      bias_store=c(bias_store,bias_i) # store the bias at i
+      
+      # Store predictions
+      prediction_sim_store[,i]=h_predict # at each column, insert the prediction
+      
+      # get running mean of the prediction
+      # use sapply for the first simulation draw
+       mean_prediction=ifelse(i>1,apply(prediction_sim_store[,1:i],1,mean),sapply(prediction_sim_store[,1:i],mean)) 
+       
+      # how far each prediction is from the mean prediction
+       pred_var_i=(h_predict-mean_prediction)**2
+       pred_var_score=c(pred_var_score,pred_var_i)
+       
+       
+    #LHS
+       # create OOS datapoint
+       xi_oos=sort(runif(N,-2,2)) # draw at random again
+       y_oos=sapply(xi_oos,f_x)
+       h_predict_oos=unname(predict(hyp,data.frame(xi_oos)))
+       
+       # calculate the error SE^2
+       oos_err_i=(h_predict_oos-y_oos)**2
+       oos_err_store=c(oos_err_store,oos_err_i)
+       
+       
+      
+   }
+  
+  #  get the averages
+  model_bias2=round(mean(bias_store),4)
+  model_var=round(mean(pred_var_score),4)
+  both=round(model_bias2+model_var,4)
+  oos_err_est=round(mean(oos_err_store),4)
+  estimate_diff=round(abs(both-oos_err_est),4)
+  
+  
+  return(list(model_bias2=model_bias2,model_var=model_var,both=both,oos_err_est=oos_err_est,estimate_diff=estimate_diff))
+}
+
+
+# Test the above
+f_true=f_x
+sig=0
+N=5
+
+
+
+h1_out=oos_estimate(f_true,h1,sig,N, nsim=1000);h1_out
+
+h2_out=oos_estimate(f_true,h2,sig,N, nsim=1000);h2_out
+
+
+rbind(data.frame(h1_out),data.frame(h2_out)) %>% 
+  mutate(model=c('h1(x)','h2(x)')) %>% 
+  column_to_rownames(var = "model")
+
+```
+
+```{r}
+
+sigmas=seq(0,0.5,0.1)
+
+
+f_true=f_x
+N=5
+
+# apply function for all sigmas
+h1_sigma_function_values=sapply(sigmas,oos_estimate,f_true=f_x,hyp=h1,N=5,nsim=1000)
+h2_sigma_function_values=sapply(sigmas,oos_estimate,f_true=f_x,hyp=h2,N=5,nsim=1000)
+
+# create bias plot
+plot(NULL,xlim=c(0,0.5),ylim=c(0,0.10),xlab='sigma',ylab='bias2',main=' Model Bias vs Noise Parameter (sigma)',)
+lines(sigmas,unlist(h1_sigma_function_values[1,]),col='blue',lwd=1.5)
+points(sigmas,unlist(h1_sigma_function_values[1,]),col='blue',pch = 1)
+lines(sigmas,unlist(h2_sigma_function_values[1,]),col='red',lwd=1.5)
+points(sigmas,unlist(h2_sigma_function_values[1,]),col='red',pch = 1)
+
+legend("bottomright", 
+       legend = c("h1(x)", "h2(x)"), # Text labels
+       col = c('blue','red'),                           
+       pch = 1, 
+       cex=0.85,
+       title = "Hypothesis Function",
+       bty='n')  
+
+
+plot(NULL,xlim=c(0,0.5),ylim=c(0,0.10),xlab='sigma',ylab='Variance',main=' Model Variance vs Noise Parameter (sigma)',)
+lines(sigmas,unlist(h1_sigma_function_values[2,]),col='blue',lwd=1.5)
+points(sigmas,unlist(h1_sigma_function_values[2,]),col='blue',pch = 1)
+lines(sigmas,unlist(h2_sigma_function_values[2,]),col='red',lwd=1.5)
+points(sigmas,unlist(h2_sigma_function_values[2,]),col='red',pch = 1)
+
+legend("bottomright", 
+       legend = c("h1(x)", "h2(x)"), # Text labels
+       col = c('blue','red'),                           
+       pch = 1, 
+       cex=0.85,
+       title = "Hypothesis Function",
+       bty='n')  
+
+
+plot(NULL,xlim=c(0,0.5),ylim=c(0,0.14),xlab='sigma',ylab='E[E_OOS_Err]',main=' Model Expected OOS Error vs Noise Parameter (sigma)',)
+lines(sigmas,unlist(h1_sigma_function_values[4,]),col='blue',lwd=1.5)
+points(sigmas,unlist(h1_sigma_function_values[4,]),col='blue',pch = 1)
+lines(sigmas,unlist(h2_sigma_function_values[4,]),col='red',lwd=1.5)
+points(sigmas,unlist(h2_sigma_function_values[4,]),col='red',pch = 1)
+
+legend("bottomright", 
+       legend = c("h1(x)", "h2(x)"), # Text labels
+       col = c('blue','red'),                           
+       pch = 1, 
+       cex=0.85,
+       title = "Hypothesis Function",
+       bty='n')  
+
+
+
+```
+
+c\)
+
+-   Linear Model has better OOS performance overall averaged across 1000 simulations and varying values of the noise parameter
+
+-   Non linear model has lower bias but higer variance and the ooposite is observed for variance of the model
+
+-   Given the estimated OOS Error, go with the linear model as it is more parsimonious
+
+```{r}
 
 ```
