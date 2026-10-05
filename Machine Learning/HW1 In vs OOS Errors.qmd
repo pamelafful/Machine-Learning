@@ -4,7 +4,7 @@ format: html
 editor: visual
 ---
 
-## Simulate data 
+## Simulate data
 
 ### Size n from a regression y=a+bx+e where e\~N(0,sig) and x is the interval \[0,1\]
 

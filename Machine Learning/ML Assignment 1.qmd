@@ -326,6 +326,104 @@ c\)
 
 -   Given the estimated OOS Error, go with the linear model as it is more parsimonious
 
+Q4
+
+a\)
+
 ```{r}
+dat = read.table('Collider_Data_2022.txt', h = TRUE,stringsAsFactors =T) 
+dim(dat)
+
+head(dat,10)
+```
+
+```{r}
+
+plot(NULL, xlim=c(min(dat['X1']),max(dat['X1'])),ylim=c(min(dat['X2']),max(dat['X2'])), xlab='X1',ylab='X2',main='Classification Scatter Plot')
+
+points(dat[dat$Yi1==1,]$X1,dat[dat$Yi1==1,]$X2,col='blue',pch=10)
+
+points(dat[dat$Yi2==1,]$X1,dat[dat$Yi2==1,]$X2,col='red',pch=10)
+
+points(dat[dat$Yi3==1,]$X1,dat[dat$Yi3==1,]$X2,col='purple',pch=10)
+
+legend(x='topleft',
+       legend = c("Yi1", 'Yi2','Yi3'),
+       col=c('blue','red','purple'),
+       pch=c(10,10,10),
+       title = "Groups",
+       cex=0.85,
+       bty = "o")
+
+```
+
+-   Insert comment here
+
+b\)
+
+```{r}
+
+soft_max=function(z){ # assume z is a vector
+  #z_ret=matrix(NA,nrow=dim(z)[1],ncol=dim(z)[2])
+  num=exp(z)
+  
+  sums=apply(num,2,sum)
+  result <- t(t(num) / sums)
+
+  
+  
+  
+#   for(i in 1:dim(num)[2] ){ # along cols
+#     for(j in 1:dim(num)[1] ){ # along rows
+#       
+#     z_ret[j,i]=num[j,i]/apply(num,2,sum)[i]
+#     
+#   }
+# }
+# 
+#   
+  return(list(num=num,result=result,sums=sums))
+#   
+}
+
+# Test
+N=3
+
+x=matrix(1:9,ncol=N,nrow=3)
+
+soft_max(x)
+
+```
+
+c\)
+
+```{r}
+
+rm(list = ls())
+
+X=cbind(dat$X1,dat$X1)
+Y=cbind(dat$Yi1,dat$Yi2,dat$Yi3)
+
+
+FeedForward = function(X, Y,iterlim = 1000, plt = FALSE)
+{
+  # Dimensions and initialize
+  N = dim(X)[1]
+  d =  dim(X)[2] # nr of features
+  K=dim(Y)[2] # nr of classes we are classifying
+  X = cbind(1,X) # add bias weight/term to the X
+  #Y = matrix(T,ncol=1) # ensure that it stays a column matric
+  W = matrix(0,d+1,K) #weight matrix for K classes, with nrow=d+1,ncol=nr_classes
+  
+  # start with initial prediction
+  Y_initial=X%*%W
+  
+  # Apply the activation
+  Y_initial_pred=apply(Y_initial,2,soft_max);Y_initial_pred
+  
+  
+  
+}
+
 
 ```
