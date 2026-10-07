@@ -108,8 +108,10 @@ for(beta in beta_qs){
 
 q=10
 Ns=seq(20,110,10)
+
+
 sigmas=seq(0.2,1.1,0.1)
-datasets=list()
+
 
 
 lq=function(x,q=10){ # q is the order
@@ -144,21 +146,75 @@ set.seed(1)
 
 
 
+
 #Generate a list of N datasets
 
-for(n in Ns){
+
+
+
+n_sim=10
+
+all_matrix=1:length(Ns)
+for(sim in 1:n_sim){
+  error_diffs=matrix(NA,nrow=length(sigmas),ncol=length(Ns),dimnames = list(sigmas,Ns))
+for(sig_i in sigmas){
+  for(n in Ns) {
   set.seed(1)
   beta_q=runif(1,-1,1)
   Qf=10
-  x_sim=seq(-1,1,length.out=n)
+  x_sim=runif(n,-1,1)
+  
+  
+  # apply target
+  yi_sig_n=sapply(x_sim,target_beta,beta_q=beta_q,Qf=10,sig=sig_i)
+  
+  # fit h2 and h10
+  
+  h2=lm(yi_sig_n~poly(x_sim,2,raw=T))
+  h10=lm(yi_sig_n~poly(x_sim,10,raw=T))
+  
+  
+  # get oos predictions from above
+  x_sim_oos= runif(n,-1,1)
+  yi_oos=sapply(x_sim_oos,target_beta,beta_q=beta_q,Qf=10,sig=sig_i)
+  h2_pred_n_sig=unname(predict(h2,data.frame(x_sim_oos)))
+  h10_pred_n_sig=unname(predict(h10,data.frame(x_sim_oos)))
+  
+  # Get the errors
+  # Using MSE
+  h2_oos_err=mean((yi_oos-h2_pred_n_sig)**2)
+  h10_oos_err=mean((yi_oos-h10_pred_n_sig)**2)
+  
+  # get diff
   i=which(Ns==n)
-  datasets[[i]]=sapply(x_sim,target_beta,beta_q=beta_q,Qf=10)
+  j=which(sigmas==sig_i)
+  error_diffs[i,j]=(h2_oos_err-h10_oos_err)
+  
+
+  
+    
+  }
+
   
 }
+  #concat all the matrices from n simulations of each N,sig combination
+  all_matrix=rbind(error_diffs)
+}
 
+all_matrix[1,]
 
-datasets
+ # matrix of error differences
+```
 
+```{r}
+c1=c(1,2,3)
+
+for(i in 1:5){
+  
+   c1=rbind(c1,c(3,2,1))
+}
+
+c1
 ```
 
 ### Q3
