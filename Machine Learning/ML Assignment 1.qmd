@@ -526,25 +526,57 @@ X=cbind(dat$X1,dat$X1)
 Y=cbind(dat$Yi1,dat$Yi2,dat$Yi3)
 
 
-FeedForward = function(X, Y,iterlim = 1000, plt = FALSE)
-{
-  # Dimensions and initialize
-  N = dim(X)[1]
-  d =  dim(X)[2] # nr of features
-  K=dim(Y)[2] # nr of classes we are classifying
-  X = cbind(1,X) # add bias weight/term to the X
-  #Y = matrix(T,ncol=1) # ensure that it stays a column matric
-  W = matrix(0,d+1,K) #weight matrix for K classes, with nrow=d+1,ncol=nr_classes
+feedforward_nn=function(X_input,y,m,nu,activation_fun){
   
-  # start with initial prediction
-  Y_initial=as.matrix(X%*%W)
+  # Initialize relevant layer matrices
+  N=dim(X_input)[1] # nr obs
+  p=dim(X)[2] # nr of cols=nr of nodes in input layer for obs i
+  #1. nr of nodes in input layer=2 features across N observations
   
-  # Apply the activation
-  Y_initial_pred=soft_max(Y_initial);
+  # Going into layer 1
+  d0=p # nodes in input
+  d1=m # nodes in hidden
+  d2=dim(y)[2]
+  X=matrix(0,nrow=p,ncol=N)
+  W1=matrix(0,nrows=d0,ncol=d1) # weight matrix from input layer to hidden layer
+  b1=matrix(0,nrow=m,ncol=1) # bias matrix going into hidden layer
   
-  Y_initial
+# Going  into output/layer 2
+  
+  W2=matrix(0,nrow=d1,ncol=d2) # weight matrix from input layer to hidden layer
+  
+  b2=matrix(0,nrow=d2,ncol=1)
+  
+ ones_matrix=matrix(1,nrow=1,ncol=N) # since we want to be able to add our biases to the result of Wt*x for the first layer
+  
+  
+  
+  
+  
+  
   
 }
 
+
+# FeedForward = function(X, Y,iterlim = 1000, plt = FALSE)
+# {
+#   # Dimensions and initialize
+#   N = dim(X)[1]
+#   d =  dim(X)[2] # nr of features
+#   K=dim(Y)[2] # nr of classes we are classifying
+#   X = cbind(1,X) # add bias weight/term to the X
+#   #Y = matrix(T,ncol=1) # ensure that it stays a column matric
+#   W = matrix(0,d+1,K) #weight matrix for K classes, with nrow=d+1,ncol=nr_classes
+#   
+#   # start with initial prediction
+#   Y_initial=as.matrix(X%*%W)
+#   
+#   # Apply the activation
+#   Y_initial_pred=soft_max(Y_initial);
+#   
+#   Y_initial
+#   
+# }
+# 
 
 ```
