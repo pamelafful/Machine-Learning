@@ -480,40 +480,33 @@ b\)
 
 ```{r}
 
-soft_max=function(z){ # assume z is a vector
+soft_max=function(z){ # assume z is a matrix
   #z_ret=matrix(NA,nrow=dim(z)[1],ncol=dim(z)[2])
   num=exp(z)
   
-  sums=apply(num,2,sum)
-  result <- t(as.matrix(t(t(num) / sums)))
+  sums=colSums(num)
+  result=t(as.matrix(t(t(num) / sums)))
 
-  
-  
-  
-#   for(i in 1:dim(num)[2] ){ # along cols
-#     for(j in 1:dim(num)[1] ){ # along rows
-#       
-#     z_ret[j,i]=num[j,i]/apply(num,2,sum)[i]
-#     
-#   }
-# }
-# 
-#   
   return(result)
-#   
+  
 }
 
-# Test
-N=10
-
-x=matrix(1:30,ncol=N,nrow=3)
-
-dim(soft_max(x))
-
-z=Y_initial
 
 
-dim(as.matrix(t(soft_max(Y_initial))))
+
+```
+
+```{r}
+
+# g = matrix(c(
+#   1.25,  0.83, -0.42,
+#   2.18,  1.47,  0.95,
+#   0.64,  2.31,  1.72,
+#   1.53, -0.26,  0.38
+# ), nrow = 4, ncol = 3)
+# 
+# g
+# soft_max(g)
 ```
 
 c\)
@@ -522,61 +515,211 @@ c\)
 
 #rm(list = ls())
 
-X=cbind(dat$X1,dat$X1)
+X_feat=cbind(dat$X1,dat$X1)
 Y=cbind(dat$Yi1,dat$Yi2,dat$Yi3)
 
+choose_label=function(vector_prob){
+  
+  labels_vec=ifelse(vector_prob==max(vector_prob),1,0)
+  return(labels_vec)
+  
+}
 
-feedforward_nn=function(X_input,y,m,nu,activation_fun){
+
+
+feedforward_nn=function(X_input,y_input,theta,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh){
+  
+  # theta is the vector of initial weights
+  #it is of length p*m+m*q+m+q (W1+W2+b1+b2)
+  # in this code q=d2
+
+  y=as.matrix(y_input)
   
   # Initialize relevant layer matrices
-  N=dim(X_input)[1] # nr obs
-  p=dim(X)[2] # nr of cols=nr of nodes in input layer for obs i
-  #1. nr of nodes in input layer=2 features across N observations
   
+  
+  N=dim(X_input)[1] # nr obs
+  p=dim(X_input)[2] # nr of cols=nr of nodes in input layer for obs i
+  #1. nr of nodes in input layer=2 features across N observations
+
   # Going into layer 1
   d0=p # nodes in input
   d1=m # nodes in hidden
   d2=dim(y)[2]
-  X=matrix(0,nrow=p,ncol=N)
-  W1=matrix(0,nrows=d0,ncol=d1) # weight matrix from input layer to hidden layer
-  b1=matrix(0,nrow=m,ncol=1) # bias matrix going into hidden layer
+
+  X=t(as.matrix(X_input)) # obs as cols
+  index_chunk1=p*m #W1
+  index_chunk2=index_chunk1+1 #W2
+  index_chunk3=index_chunk2+1 #B1
+  index_chunk4=index_chunk3+1 #B2
   
+  
+  W1=matrix(theta[1:index_chunk1],nrow=d0,ncol=d1) # weight matrix from input layer to hidden layer
+  #A1_mat=matrix(0,nrow=m,ncol=p)
+  b1=matrix(theta[index_chunk3:((index_chunk3+m)-1)],nrow=m,ncol=1) # bias matrix going into hidden layer
+  b1_ones_matrix=matrix(1,nrow=1,ncol=N)
+  b1_mat=b1%*%b1_ones_matrix
 # Going  into output/layer 2
   
-  W2=matrix(0,nrow=d1,ncol=d2) # weight matrix from input layer to hidden layer
+  W2=matrix(theta[index_chunk2:((index_chunk2+(m*d2))-1)],nrow=d1,ncol=d2) # weight matrix from input layer to hidden layer
   
-  b2=matrix(0,nrow=d2,ncol=1)
+  b2=matrix(theta[index_chunk4:((index_chunk4+d2)-1)],nrow=d2,ncol=1)
+  b2_ones_matrix=matrix(1,nrow=1,ncol=N) # Repeat this N times
+  b2_mat=b2%*%b2_ones_matrix
   
- ones_matrix=matrix(1,nrow=1,ncol=N) # since we want to be able to add our biases to the result of Wt*x for the first layer
+ # Do one forward calc and get prediction
+ 
+first_layer_comp=t(W1)%*%X+b1_mat
+
+# apply activation
+first_layer_comp=activation_fun_1(first_layer_comp)
+
+
+
+
+#second_layer_cal
+
+second_layer_comp=activation_fun_2(t(W2)%*%first_layer_comp+b2_mat)
+
+
+
+
+#predictions across N observations 
+# prediction = max probability
+y_preds=second_layer_comp
+y_pred_label=t(apply(y_preds,1,choose_label)) # one hot encoding
+
+
+
+# control for very small values in the matrix
+log_compute= function(mat, threshold = 1e-4) {
+  ifelse(mat < threshold, log1p(mat), log(mat))
+}
+
+
+
+CE_mat=y*log_compute(y_preds) 
+CE_error=-mean(apply(CE_mat,1,sum)) # normal non_penalized oobj
+
+CE_error_L2=CE_error+(nu/N)*(sum(W1^2)+sum(W2^2)) # regularized obj
+
   
-  
-  
-  
+return(list(first_layer_comp = first_layer_comp,second_layer_comp = second_layer_comp, CE_error = CE_error, CE_error_L2 = CE_error_L2))
   
   
   
 }
 
+y_input=Y
+X_input=X_feat
 
-# FeedForward = function(X, Y,iterlim = 1000, plt = FALSE)
-# {
-#   # Dimensions and initialize
-#   N = dim(X)[1]
-#   d =  dim(X)[2] # nr of features
-#   K=dim(Y)[2] # nr of classes we are classifying
-#   X = cbind(1,X) # add bias weight/term to the X
-#   #Y = matrix(T,ncol=1) # ensure that it stays a column matric
-#   W = matrix(0,d+1,K) #weight matrix for K classes, with nrow=d+1,ncol=nr_classes
-#   
-#   # start with initial prediction
-#   Y_initial=as.matrix(X%*%W)
-#   
-#   # Apply the activation
-#   Y_initial_pred=soft_max(Y_initial);
-#   
-#   Y_initial
-#   
-# }
-# 
+nu  = 0
+m   = 10
+
+p     = dim(X_input)[2] 
+q     = dim(as.matrix(Y))[2]
+npars = p*m+m*q+m+q
+theta_rand = runif(npars,-1,1)
+
+
+nu = 0
+obj_pen = function(pars)
+{
+  res_model = feedforward_nn(X_input,y_input,pars,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)
+  return(res_model$CE_error) 
+}
+
+obj_pen(theta_rand)
+
+# Fit the neural network using a standard optimizer in R:
+res_opt = nlm(obj_pen,theta_rand, iterlim = 1000)
+res_opt
+```
+
+```{r}
+set.seed(2)
+N       = dim(X_feat)[1]
+set     = sample(1:N,0.8*N,replace = FALSE)
+X_train = X_feat[set,,drop = FALSE] #
+Y_train = Y[set,,drop = FALSE]
+X_val   = X_feat[-set,,drop = FALSE]
+Y_val   = Y[-set,,drop = FALSE]
+
+obj_pen = function(pars)
+{
+  res_model = feedforward_nn(X_input,y_input,pars,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)  
+  return(res_model$CE_error_L2) # Reg Obj
+}
+
+n_nus = 15
+nu_seq= exp(seq(-5,1,length = n_nus))
+val_error = rep(0,n_nus)
+for(i in 1:n_nus)
+{
+	nu = nu_seq[i] # Pick nu
+	res_opt = nlm(obj_pen,theta_rand, iterlim = 1000) # Fit for that nu
+	
+	res_val      = feedforward_nn(X_input,y_input,theta_rand,m,res_opt$estimate,activation_fun_2=soft_max,activation_fun_1=tanh)
+  val_error[i] = res_val$CE_error_L2
+  
+  print(paste0('Validation run:',i,' nu = ', nu))
+  
+  res_fitted = feedforward_nn(X_input,y_input,theta_rand,m,res_opt$estimate,activation_fun_2=soft_max,activation_fun_1=tanh)#neural_net(XX,YY,res_opt$estimate,m,nu)
+
+}
+```
+
+```{r}
+
+m=10
+library(colorspace)
+color.gradient = function(x, colors=c('magenta','white','lightblue'), colsteps=50)
+{
+  colpal = colorRampPalette(colors)
+  return( colpal(colsteps)[ findInterval(x, seq(min(x),max(x), length=colsteps)) ] )
+}
+
+
+best_nu_index=which(val_error==min(val_error))
+
+best_nu=n_nus[best_nu_index]
+best_nu
+
+# use this to fit model again 
+
+
+obj_pen = function(pars)
+{
+  res_model =feedforward_nn(X_input,y_input,theta_rand,m,best_nu,activation_fun_2=soft_max,activation_fun_1=tanh)
+  return(res_model$CE_error_L2) # Reg Obj
+}
+
+res_opt_best_nu = nlm(obj_pen,theta_rand, iterlim = 1000)
+
+
+#Resp curve
+cols=c('blue','red','purple')
+
+M   = 5
+x1  = seq(-4,+3,length = M)
+x2  = seq(-4,+3,length = M)
+xx1 = rep(x1,M)
+xx2 = rep(x2,each = M)
+
+plot(NULL, xlim=c(-4,3),ylim=c(-4,3),xlab='x1',ylab='x2')
+
+abline(h= x2,v = x1, lwd = 0.3)
+
+points(xx2~xx1,pch = 16, cex = 0.5)
+
+
+XX = cbind(xx1,xx2)
+YY = cbind(rep(1,M^2))
+res_fitted=feedforward_nn(X_input,y_input,res_opt_best_nu$estimate,m,best_nu,activation_fun_2=soft_max,activation_fun_1=tanh) 
+
+plot(XX[,2]~XX[,1],col = color.gradient(res_fitted$second_layer_comp ),pch = 16,cex = 0.5)
+points(X_feat[,2]~X_feat[,1], col = cols[Y+1], pch = 16)
+
+X_input
 
 ```
