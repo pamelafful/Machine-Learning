@@ -515,7 +515,7 @@ c\)
 
 #rm(list = ls())
 
-X_feat=cbind(dat$X1,dat$X1)
+X_feat=cbind(dat$X1,dat$X2)
 Y=cbind(dat$Yi1,dat$Yi2,dat$Yi3)
 
 choose_label=function(vector_prob){
@@ -720,6 +720,5 @@ res_fitted=feedforward_nn(X_input,y_input,res_opt_best_nu$estimate,m,best_nu,act
 plot(XX[,2]~XX[,1],col = color.gradient(res_fitted$second_layer_comp ),pch = 16,cex = 0.5)
 points(X_feat[,2]~X_feat[,1], col = cols[Y+1], pch = 16)
 
-X_input
 
 ```
