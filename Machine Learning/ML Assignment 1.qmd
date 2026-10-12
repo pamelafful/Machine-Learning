@@ -503,10 +503,9 @@ b\)
 
 soft_max = function(z) {  # assume z is a matrix
 
-  # Subtract the maximum of each column
   z_shifted = sweep(z, 2, apply(z, 2, max), FUN = "-") # subtract maximum from each column
 
-  # Compute exponentials of shifted values
+ 
   num = exp(z_shifted)
 
   # Sum exponentials within each column
@@ -515,7 +514,7 @@ soft_max = function(z) {  # assume z is a matrix
   # Normalize each column
   result = sweep(num, 2, sums, FUN = "/")
 
-  return(list(result=result,z_shifted=z_shifted, num = num ))
+  return(result)
 }
 
 
@@ -607,29 +606,34 @@ second_layer_comp_no_activation=t(W2)%*%first_layer_comp+b2_mat
 #predictions across N observations 
 # prediction = max probability
 y_preds=second_layer_comp
-y_pred_label=t(apply(y_preds,1,choose_label)) # one hot encoding
+y_pred_label=apply(y_preds,1,choose_label) # one hot encoding
+# 
+# 
+# 
+# # control for very small values in the matrix
+# log_compute= function(mat, threshold = 1e-4) {
+#   ifelse(mat < threshold, log1p(mat), log(mat))
+# }
+# 
+# 
+# 
+# CE_mat=y*log_compute(y_preds) 
+# CE_error=-mean(apply(CE_mat,1,sum)) # normal non_penalized oobj
+# 
+# CE_error_L2=CE_error+(nu/N)*(sum(W1^2)+sum(W2^2)) # regularized obj
 
+  
 
+# return(list(first_layer_comp = first_layer_comp,second_layer_comp = second_layer_comp, CE_error = CE_error, CE_error_L2 = CE_error_L2,second_layer_comp_no_activation=second_layer_comp_no_activation))
 
-# control for very small values in the matrix
-log_compute= function(mat, threshold = 1e-4) {
-  ifelse(mat < threshold, log1p(mat), log(mat))
+  return(second_layer_comp)
+  
 }
 
 
+```
 
-CE_mat=y*log_compute(y_preds) 
-CE_error=-mean(apply(CE_mat,1,sum)) # normal non_penalized oobj
-
-CE_error_L2=CE_error+(nu/N)*(sum(W1^2)+sum(W2^2)) # regularized obj
-
-  
-
-return(list(first_layer_comp = first_layer_comp,second_layer_comp = second_layer_comp, CE_error = CE_error, CE_error_L2 = CE_error_L2,second_layer_comp_no_activation=second_layer_comp_no_activation))
-
-  
-  
-}
+```{r}
 
 y_input=Y
 X_input=X_feat
@@ -661,32 +665,10 @@ Y_test2=ifelse(runif(dim(X_input)[1])<0.5,0,1)
 
 Y_test=cbind(Y_test1,Y_test2)
 
-test_1=feedforward_nn(X_input,Y_test,res_opt$estimate,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)$second_layer_comp_no_activation
+test_1=feedforward_nn(X_input,y_input,res_opt$estimate,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)#$second_layer_comp_no_activation
 test_2=feedforward_nn(X_input,Y_test,res_opt$estimate,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)$second_layer_comp
 
-exp(test_1[,1:5])
-
-colSums(exp(test_1[,1:5]))
-
-soft_max(test_1)$result[,1:5]
-soft_max(test_1)$z_shifted[,1:5]
-soft_max(test_1)$num[,1:5]
-colSums(soft_max(test_1)$num[,1:5])
-
-```
-
-```{r}
-
-sum(  c(test_1[,1:5][1,1],test_1[,1:5][2,1]) )==test_1[,1:5][1,1]
-
-exp(186)
-exp(186)+exp(49.29886)
-
-
-large_mpfr <- mpfr(exp(186.77), precBits = 200)
-small_mpfr <- mpfr(exp(49.29886), precBits = 200)
-
-str(exp(186.77)/(large_mpfr+small_mpfr))
+test_1
 ```
 
 ```{r}
