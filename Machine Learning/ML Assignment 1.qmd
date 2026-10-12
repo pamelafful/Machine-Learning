@@ -5,6 +5,11 @@ format: pdf
 editor: visual
 ---
 
+```{r}
+install.packages("Rmpfr")
+library(Rmpfr)
+```
+
 ### Q1
 
 ```{r}
@@ -480,16 +485,39 @@ b\)
 
 ```{r}
 
-soft_max=function(z){ # assume z is a matrix
-  #z_ret=matrix(NA,nrow=dim(z)[1],ncol=dim(z)[2])
-  num=exp(z)
-  
-  sums=colSums(num)
-  result=t(as.matrix(t(t(num) / sums)))
+# soft_max=function(z){ # assume z is a matrix
+#   #z_ret=matrix(NA,nrow=dim(z)[1],ncol=dim(z)[2])
+#   num=exp(z)
+#   
+#   sums=colSums(num)
+#   result1=as.matrix(t(t(num) / sums))
+#   result2=sweep(num,2,sums,FUN='/') # divide each col element by the sums
+# 
+#   return(result2)
+#   
+# }
 
-  return(result)
-  
+
+# Numerically stable softmax
+
+
+soft_max = function(z) {  # assume z is a matrix
+
+  # Subtract the maximum of each column
+  z_shifted = sweep(z, 2, apply(z, 2, max), FUN = "-") # subtract maximum from each column
+
+  # Compute exponentials of shifted values
+  num = exp(z_shifted)
+
+  # Sum exponentials within each column
+  sums = colSums(num)
+
+  # Normalize each column
+  result = sweep(num, 2, sums, FUN = "/")
+
+  return(list(result=result,z_shifted=z_shifted, num = num ))
 }
+
 
 
 
@@ -596,8 +624,9 @@ CE_error=-mean(apply(CE_mat,1,sum)) # normal non_penalized oobj
 CE_error_L2=CE_error+(nu/N)*(sum(W1^2)+sum(W2^2)) # regularized obj
 
   
+
 return(list(first_layer_comp = first_layer_comp,second_layer_comp = second_layer_comp, CE_error = CE_error, CE_error_L2 = CE_error_L2,second_layer_comp_no_activation=second_layer_comp_no_activation))
-  
+
   
   
 }
@@ -615,22 +644,49 @@ theta_rand = runif(npars,-1,1)
 # 
 # 
 nu = 0
-obj_pen = function(pars)
-{
-  res_model = feedforward_nn(X_input,y_input,pars,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)
-  return(res_model$CE_error)
-}
-
-
-# Fit the neural network using a standard optimizer in R:
-res_opt = nlm(obj_pen,theta_rand, iterlim = 1000)
+# obj_pen = function(pars)
+# {
+#   res_model = feedforward_nn(X_input,y_input,pars,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)
+#   return(res_model$CE_error)
+# }
+# 
+# 
+# # Fit the neural network using a standard optimizer in R:
+# res_opt = nlm(obj_pen,theta_rand, iterlim = 1000)
 
 # Get initial observations
 
-Y_test=runif(dim(X_input)[1])
-feedforward_nn(X_input,Y_test,res_opt$estimate,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)$second_layer_comp_no_activation
+Y_test1=ifelse(runif(dim(X_input)[1])<0.5,0,1)
+Y_test2=ifelse(runif(dim(X_input)[1])<0.5,0,1)
+
+Y_test=cbind(Y_test1,Y_test2)
+
+test_1=feedforward_nn(X_input,Y_test,res_opt$estimate,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)$second_layer_comp_no_activation
+test_2=feedforward_nn(X_input,Y_test,res_opt$estimate,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)$second_layer_comp
+
+exp(test_1[,1:5])
+
+colSums(exp(test_1[,1:5]))
+
+soft_max(test_1)$result[,1:5]
+soft_max(test_1)$z_shifted[,1:5]
+soft_max(test_1)$num[,1:5]
+colSums(soft_max(test_1)$num[,1:5])
+
+```
+
+```{r}
+
+sum(  c(test_1[,1:5][1,1],test_1[,1:5][2,1]) )==test_1[,1:5][1,1]
+
+exp(186)
+exp(186)+exp(49.29886)
 
 
+large_mpfr <- mpfr(exp(186.77), precBits = 200)
+small_mpfr <- mpfr(exp(49.29886), precBits = 200)
+
+str(exp(186.77)/(large_mpfr+small_mpfr))
 ```
 
 ```{r}
