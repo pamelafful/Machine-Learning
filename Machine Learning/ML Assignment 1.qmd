@@ -762,9 +762,9 @@ res_opt_best_nu = nlm(obj_pen,theta_rand, iterlim = 1000)
 #Resp curve
 cols=c('blue','red','purple')
 
-M   = 3
-x1  = seq(-3,+3,length = M)
-x2  = seq(-3,+3,length = M)
+M   = 100
+x1  = seq(-10,+10,length = M)
+x2  = seq(-10,+10,length = M)
 xx1 = rep(x1,M)
 xx2 = rep(x2,each = M)
 
@@ -776,12 +776,14 @@ abline(h= x2,v = x1, lwd = 0.3)
 
 
 XX = cbind(xx1,xx2)
-YY = cbind(rep(1,M^2))
+YY1 = rep(1,M^2)
+YY2=rep(1,M^2)
+YY=cbind(YY1,YY2)
+
 res_fitted=feedforward_nn(XX,YY,res_opt_best_nu$estimate,m,best_nu,activation_fun_2=soft_max,activation_fun_1=tanh) 
 
 points(xx2~xx1,pch = 16, col=color.gradient(res_fitted$second_layer_comp),cex = 0.5)
 points(X_feat[,2]~X_feat[,1], col = cols, pch = 16)
-
 
 
 ```
