@@ -776,7 +776,7 @@ xx2 = rep(x2,each = M)
 
 plot(NULL, xlim=c(-6,6),ylim=c(-5,5),xlab='x1',ylab='x2', main='Feed Forard NN Prediction Feature Space Plot')
 
-abline(h= x2,v = x1, lwd = 0.3)
+abline(h= x2,v = x1, lwd = 0.3,col='white')
 
 
 
@@ -801,6 +801,8 @@ points(X_feat[,2]~X_feat[,1], col = cols, pch = 16)
 #   border = NA,                             
 #   bty = "n"                                
 # )
+
+# Think about it!
 
 
 ```
