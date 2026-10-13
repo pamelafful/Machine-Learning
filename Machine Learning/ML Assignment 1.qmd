@@ -737,6 +737,8 @@ text(x = log(next_best_nu)-0.88, y = 25, labels = paste("next best nu=",round(ne
 
 Lowest Validation error is obtained at nu=0.1.771. The closets nu value to the right of the obtained leads to an increase in the validation error, whilst the next best nu (in terms of validation error), produces and more complex model. Thus in this case the lowest nu stays!
 
+## Response Curve
+
 ```{r}
 
 library(colorspace)
