@@ -764,7 +764,7 @@ res_opt_best_nu = nlm(obj_pen,theta_rand, iterlim = 1000)
 #Resp curve
 cols=c('blue','red','purple')
 
-M   = 100
+M   = 160
 x1  = seq(-5,+5,length = M)
 x2  = seq(-5,+5,length = M)
 xx1 = rep(x1,M)
@@ -780,7 +780,8 @@ abline(h= x2,v = x1, lwd = 0.3)
 XX = cbind(xx1,xx2)
 YY1 = rep(1,M^2)
 YY2=rep(1,M^2)
-YY=cbind(YY1,YY2)
+YY3=rep(1,M^2)
+YY=cbind(YY1,YY2,YY3)
 
 res_fitted=feedforward_nn(XX,YY,res_opt_best_nu$estimate,m,best_nu,activation_fun_2=soft_max,activation_fun_1=tanh) 
 
