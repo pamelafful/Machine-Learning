@@ -1,18 +1,62 @@
 ---
-title: "Machine Learning Assignment 1"
-author: "Pamela Afful"
-format: pdf
+title: ""
+author: ""
 editor: visual
+format:
+  pdf:
+    pdf-engine: lualatex
+    fig-pos: 'H'
+linestretch: 1.05
+documentclass: article
+include-in-header:
+  text: |
+    \usepackage{graphicx}
+
+include-before-body:
+  text: |
+    \begin{titlepage}
+    \centering
+
+    {\Large University of Cape Town\par}
+    \vspace{0.8cm}
+
+    \includegraphics[width=0.35\textwidth]{CopyOfUCTLogo.jpg}
+
+    \vspace{2cm}
+
+    {\Large Machine Learning Assignment 1\par}
+    
+    \vspace{0.5cm}
+    
+    {\Large Earthquake Analysis \par}
+
+    \vspace{1.5cm}
+
+    {\large Pamela Afful\par}
+
+    \vspace{0.5cm}
+
+    {\large Student Number: AFFPAM001\par}
+
+    \vfill
+
+    {\large \today\par}
+
+    \end{titlepage}
+    
+execute: 
+  cache: true
+  warning: false
+  message: false
+  echo: false
+  enabled: true
 ---
 
-```{r}
-install.packages("Rmpfr")
-library(Rmpfr)
-```
+### Question 1
 
-### Q1
+#### a) Legendre Polynomial Plots
 
-```{r}
+```{r,lq_fun,echo=FALSE,eval=TRUE,fig.width=10, fig.height=6}
 
 lq=function(x,q){
   coeff=2**q
@@ -33,32 +77,53 @@ lq=function(x,q){
 
 ```
 
-a\)
-
-```{r}
+```{r,lq_fun_,echo=FALSE,eval=TRUE,fig.width=6, fig.height=5}
 
 # plot the above
 # USE sapply to vectorize the calculation across a supplied vector
 x_list=list(x=seq(-1,1,0.1))
 
 x=seq(-1,1,0.1)
-Qs=seq(1,5,1)
+Qs=seq(0,5,1)
 
-plot(NULL,xlim=c(-1,1),ylim=c(min(sapply(x,lq,q=5)),max(sapply(x,lq,q=5))),xlab='x',ylab='Lq(x)',main='Lq(x) Polynomials')
-for(q_i in Qs){
-  lines(x,sapply(x,lq,q=q_i),col='blue',lwd=1.2)
+q_cols=c('blue','red','magenta','lightblue','purple','green')
 
+
+
+par(mfrow = c(2, 3),oma = c(0, 0, 3, 0))
+
+for(i in 1:length(Qs)){ #c(min(sapply(x,lq,q=5)),max(sapply(x,lq,q=5)))
+  q_i=Qs[i]
+  plot(x,sapply(x,lq,q=q_i),col=q_cols[i],lwd=1.2,xlab='x',ylab='Lq(x)',main= paste('Lq(x) q=',q_i))
+  
+  
 }
+
+mtext("Legendre Polynomials of order q", side = 3, outer = TRUE, cex = 1.5, font = 2)
+
 
 
 ```
 
-They are nonlinear curves at varying degrees
+As the order of the polynomial, q, increases, the more nonlinear/complex the$L_q(x)$ gets, albeit slowly.
 
-b\)
+1.  At q=0, $L_q(x)$ devolves to a straight horizontal line $L_q(x)$ =0 over the domain \[-1,1\].
 
-```{r}
-set.seed(2)
+2.  At q=1 $L_q(x)$ starts to have some slope attached, a straight line of the form $y=2x$
+
+3.  At q=2, 4 the non-linear curvature/complexity of $L_q(x)$ starts to become more visible particularly towards the edges of the domain \[-1,1; function approximates a parabola/quadratic function
+
+4.  At q=3,5 non-linear curvature/complexity of $L_q(x)$ both take the same shape, albeit with different magnitudes of $L_q(x)$ over the same domain.
+
+#### b) Random Target Functions
+
+```{r,rt_fun,echo=FALSE,eval=TRUE,fig.height=4}
+
+#| label: fig-subplots
+#| fig-cap: "f(x) function : Two ways"
+#| layout-ncol: 2
+
+set.seed(30)
 
 alpha_qs=runif(3,-1,1)
 beta_qs=runif(3,-1,1)
@@ -89,35 +154,64 @@ target_beta=function(x,beta_q,Qf){
 
 # Plot the above target_alpha
 
-plot(NULL,xlim=c(-1,1),ylim=c(-10,10),xlab='x',ylab='f(x)',main='Eqn(2) Random Target Functions')
+plot(NULL,xlim=c(-1,1),ylim=c(-5,2),xlab='x',ylab='f(x)',main='Equation 2 Random Target Functions')
 
-for(alpha in alpha_qs){
-  lines(x,sapply(x,target_alpha,alpha_q=alpha,Qf=5),col='blue',lwd=1.2)
+q_cols=c('blue','red','magenta','lightblue','purple','green')
+
+for(i in 1:length(alpha_qs)){
+  alpha=alpha_qs[i]
+  
+  lines(x,sapply(x,target_alpha,alpha_q=alpha,Qf=5),col=q_cols[i],lwd=1.2)
 }
+
+
+legend("bottomleft", 
+       legend = c( paste('alpha:',round(alpha_qs[1],2)),paste('alpha:',round(alpha_qs[2],2)),paste('alpha:',round(alpha_qs[3],2))), # Text labels
+       col = q_cols[1:3],                           
+       pch = 1, 
+       cex=0.85,
+       title = "Equation 2",
+       bty='n') 
 
 # Plot the above target_beta
 
 
-plot(NULL,xlim=c(-1,1),ylim=c(-100,100),xlab='x',ylab='f(x)',main='Eqn(2) Random Target Functions')
+plot(NULL,xlim=c(-1,1),ylim=c(-100,100),xlab='x',ylab='f(x)',main='Equation 3 Random Target Functions')
 
-for(beta in beta_qs){
-  lines(x,sapply(x,target_beta,beta_q=beta,Qf=5),col='red',lwd=1.2)
+for(i in 1:length(beta_qs)){
+  beta_i=beta_qs[i]
+  lines(x,sapply(x,target_beta,beta_q=beta_i,Qf=5),col=q_cols[i],lwd=1.2)
 }
+
+
+legend("topleft", 
+       legend = c( paste('beta:',round(beta_qs[1],2)),paste('beta:',round(beta_qs[2],2)),paste('beta:',round(beta_qs[3],2))), # Text labels
+       col = q_cols[1:3],                           
+       pch = 1, 
+       cex=0.85,
+       title = "Equation 3",
+       bty='n')
 
 
 ```
 
-### Q2)
+Observations:
 
-```{r}
+1.  For $f(x) = \sum_{q=0}^ {Q_f} \alpha_q x^q$ the functions, looks to only ouput negative values over the domian \[-1,1\]
+
+2.  $f(x)= \sum_{q=0}^{Q_f} \beta_q L_q(x)$ outputs both positive and negative values \*comeback
+
+### Question 3
+
+#### a) Hypothesis Function Simulations
+
+```{r,lq2_fun_sim,echo=FALSE,include=F,eval=TRUE}
 
 q=10
 Ns=seq(20,110,10)
 
 
 sigmas=seq(0.2,1.1,0.1)
-
-
 
 lq=function(x,q=10){ # q is the order
   coeff=2**q
@@ -150,12 +244,7 @@ target_beta=function(x,beta_q,Qf,sig){
 set.seed(1)
 
 
-
-
 #Generate a list of N datasets
-
-
-
 
 n_sim=10
 
@@ -194,9 +283,7 @@ for(sig_i in sigmas){
   i=which(Ns==n)
   j=which(sigmas==sig_i)
   error_diffs[i,j]=(h2_oos_err-h10_oos_err)
-  
 
-  
     
   }
 
@@ -206,25 +293,9 @@ for(sig_i in sigmas){
   all_matrix=rbind(error_diffs)
 }
 
-all_matrix[1,]
-
- # matrix of error differences
 ```
 
-```{r}
-c1=c(1,2,3)
-
-for(i in 1:5){
-  
-   c1=rbind(c1,c(3,2,1))
-}
-
-c1
-```
-
-### Q3
-
-```{r}
+```{r,lq2_fun_plot,echo=FALSE,eval=TRUE}
 set.seed(2023)
 f_x=function(x,sig=0){
   epsi=rnorm(1,0,sig)
@@ -275,7 +346,7 @@ legend("bottomright",
        legend = c("f(x)", "H1", "H2"), # Text labels
        col = c(colours[1],colours[3],colours[4]),                           
        pch = 1, 
-       cex=0.85,
+       cex=0.95,
        title = "Sample Plots",
        bty='n')  
 
@@ -287,17 +358,16 @@ legend("bottomright",
 
 ```
 
-```{r}
- h1
-```
+#### b) A priori expectation
 
-b\) Given that the underlying data generating process is non-linear, the non-linear hypothesis would be more suited to fit the data
+Given that the underlying data generating process is non-linear, the non-linear hypothesis would be more suited to fit the data's non-linear behavior or overall shape
 
-c\)
+#### c) Bias Variance for H1 and H2
 
-```{r}
+```{r,bv_tab,echo=F}
 library(dplyr)
 library(tidyverse)
+library(knitr)
 
 # Funtion Arg
 # f_tru: True DGP
@@ -368,18 +438,28 @@ N=5
 
 
 
-h1_out=oos_estimate(f_true,h1,sig,N, nsim=1000);h1_out
+h1_out=oos_estimate(f_true,h1,sig,N, nsim=1000)
 
-h2_out=oos_estimate(f_true,h2,sig,N, nsim=1000);h2_out
+h2_out=oos_estimate(f_true,h2,sig,N, nsim=1000)
 
 
-rbind(data.frame(h1_out),data.frame(h2_out)) %>% 
+comaprison_table=rbind(data.frame(h1_out),data.frame(h2_out)) %>% 
   mutate(model=c('h1(x)','h2(x)')) %>% 
   column_to_rownames(var = "model")
 
+kable(comaprison_table, col.names = c('Bias','Variance','Both:Bias+Var','OOS Error','Estimate Differance'), align = "cc")
+
+
 ```
 
-```{r}
+```{r,bv_plots,echo=F}
+
+#| label: fig-subplots
+#| fig-cap: "Model Bias,Variance and OOS Error Estimate vs Noise Parameter (sigma)"
+#| layout-ncol: 3
+
+
+set.seed(321)
 
 sigmas=seq(0,0.5,0.1)
 
@@ -440,7 +520,7 @@ legend("bottomright",
 
 ```
 
-c\)
+#### e) Interpretaion \*comeback
 
 -   Linear Model has better OOS performance overall averaged across 1000 simulations and varying values of the noise parameter
 
@@ -448,18 +528,16 @@ c\)
 
 -   Given the estimated OOS Error, go with the linear model as it is more parsimonious
 
-Q4
+### Q4 Feed Forward Neural Network
 
-a\)
+#### a) Data Set Plot
 
-```{r}
+```{r,include=F,echo=F}
 dat = read.table('Collider_Data_2022.txt', h = TRUE,stringsAsFactors =T) 
 dim(dat)
-
-head(dat,1)
 ```
 
-```{r}
+```{r,coll_plot,echo=F}
 
 plot(NULL, xlim=c(min(dat['X1']),max(dat['X1'])),ylim=c(min(dat['X2']),max(dat['X2'])), xlab='X1',ylab='X2',main='Classification Scatter Plot')
 
@@ -479,27 +557,11 @@ legend(x='topleft',
 
 ```
 
--   Insert comment here
+**Observation:** The data does not appear to be linearly separable (in the given 2D feature space) as the data does not seem to have linear boundries between categories/classes. A non-linear neural network seems well suited to capture the non-linear pattern/structure embedded in the data in for the given feature space.
 
 b\)
 
-```{r}
-
-# soft_max=function(z){ # assume z is a matrix
-#   #z_ret=matrix(NA,nrow=dim(z)[1],ncol=dim(z)[2])
-#   num=exp(z)
-#   
-#   sums=colSums(num)
-#   result1=as.matrix(t(t(num) / sums))
-#   result2=sweep(num,2,sums,FUN='/') # divide each col element by the sums
-# 
-#   return(result2)
-#   
-# }
-
-
-# Numerically stable softmax
-
+```{r, soft_max,echo=F}
 
 soft_max = function(z) {  # assume z is a matrix
 
@@ -518,16 +580,11 @@ soft_max = function(z) {  # assume z is a matrix
 }
 
 
-
-
-
 ```
 
-c\)
+#### c) Feed Forward Neural Network
 
-### Feed Forward NN
-
-```{r}
+```{r,nn_code,echo=F}
 
 #rm(list = ls())
 
@@ -540,7 +597,6 @@ choose_label=function(vector_prob){
   return(labels_vec)
   
 }
-
 
 
 feedforward_nn=function(X_input,y_input,theta,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh){
@@ -629,9 +685,9 @@ return(list(first_layer_comp = first_layer_comp,second_layer_comp = second_layer
 
 ```
 
-### Validation Analysis
+**Numerical Pitfalls:** The computaion of log(yhat) in the objective function may cause the network to explode/ diverge given the undefined behavior of the log function at 0 (or values very close to 0), which can hamper the numerical stability of the network's computations.
 
-```{r}
+```{r,code_check,echo=F,include=F}
 
 # Set initial arguments
 y_input=Y
@@ -657,18 +713,31 @@ nu = 0
 
 # Test the above and Get initial observations predictions, not optimized
 
-test_1=feedforward_nn(X_input,y_input,theta_rand,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)#res_opt$estimate
+feedforward_nn(X_input,y_input,theta_rand,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)#res_opt$estimate
 
 
 
 ```
 
-Validation
+#### d) Validation Analysis
 
-```{r}
-set.seed(2)
+```{r,val_co,echo=F,include=F}
+set.seed(2022)
+
+y_input=Y
+X_input=X_feat
+# 
+nu  = 0
+m   = 3
+
+p     = dim(X_input)[2]
+q     = dim(as.matrix(Y))[2]
+
+npars = p*m+m*q+m+q
+theta_rand = runif(npars,-1,1)
+nu = 0
 N       = dim(X_feat)[1]
-set     = sample(1:N,0.8*N,replace = FALSE)
+set     = sample(1:N,0.5*N,replace = FALSE) #50 50 split
 X_train = X_feat[set,,drop = FALSE] #
 Y_train = Y[set,,drop = FALSE]
 X_val   = X_feat[-set,,drop = FALSE]
@@ -695,7 +764,7 @@ for(i in 1:n_nus)
 	# Get reg validation Error
   val_error[i] = res_val$CE_error_L2
   
-  print(paste0('Validation run:',i,' nu = ', nu))
+  #print(paste0('Validation run:',i,' nu = ', nu))
 }
 
 
@@ -703,7 +772,7 @@ for(i in 1:n_nus)
 
 Plot the above
 
-```{r, fig.width=10, fig.height=6}
+```{r, val_plot, echo=F, fig.width=6, fig.height=5}
 
 min_val_error=round(val_error[which(val_error==min(val_error))],3)
 
@@ -718,19 +787,17 @@ next_best_nu_seq=nu_seq[which(nu_seq!=best_nu)]
 
 next_best=which(next_val_error==min(next_val_error))
 next_best_nu=next_best_nu_seq[next_best];
-next_best_nu;best_nu
 
 next_min_val_error=round(next_val_error[which(next_val_error==min(next_val_error))],3)
 
 
-plot(val_error~log(nu_seq), type = 'b',pch = 16,xlim=c(-5,2))
-abline(v =log(best_nu), col = "purple", lty = "dashed", lwd = 2, main='Validation Error vs Regularization Parameter (nu)')
-
+plot(val_error~log(nu_seq), type = 'b',pch = 16,xlim=c(-6,2), main='Validation Error vs Regularization Parameter (nu)')
+abline(v =log(best_nu), col = "purple", lty = "dashed", lwd = 2)
 abline(v =log(best_nu), col = "purple", lty = "dashed", lwd = 2)
 
 abline(v =log(next_best_nu), col = "blue", lty = "dashed", lwd = 2)
 
-text(x = log(best_nu)+0.8, y = 15, labels = paste("best nu:",round(best_nu,3), 'Val Error:',min_val_error,sep = "\n"  ), 
+text(x = log(best_nu)+0.5, y = 15, labels = paste("best nu:",round(best_nu,3), 'Val Error:',min_val_error,sep = "\n"  ), 
      srt = 0, adj = c(0.5, -0.5), col = "purple",cex=0.85)
 
 
@@ -739,11 +806,11 @@ text(x = log(next_best_nu)-0.88, y = 15, labels = paste("next best nu:",round(ne
 
 ```
 
-Lowest Validation error is obtained at nu=0.1.771. The closets nu value to the right of the obtained leads to an increase in the validation error, whilst the next best nu (in terms of validation error), produces and more complex model. Thus in this case the lowest nu stays!
+\*comeback Lowest Validation error is obtained at nu=0.007. The closets nu value to the right of the obtained leads to an increase in the validation error, whilst the next best nu (in terms of validation error), produces and more complex model. Thus in this case the lowest nu stays!
 
-## Response Curve (?)
+#### d) Response Curve (?)
 
-```{r, fig.width=10, fig.height=6}
+```{r, resp_curve,echo=F ,fig.width=10, fig.height=6}
 
 library(colorspace)
 color.gradient = function(x, colors=c('blue','white','red','white','purple'), colsteps=50)
