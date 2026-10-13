@@ -703,7 +703,9 @@ for(i in 1:n_nus)
 
 Plot the above
 
-```{r}
+```{r, fig.width=10, fig.height=6}
+
+min_val_error=round(val_error[which(val_error==min(val_error))],3)
 
 best_nu_index=which(val_error==min(val_error))
 best_nu=nu_seq[best_nu_index];
@@ -718,19 +720,21 @@ next_best=which(next_val_error==min(next_val_error))
 next_best_nu=next_best_nu_seq[next_best];
 next_best_nu;best_nu
 
+next_min_val_error=round(next_val_error[which(next_val_error==min(next_val_error))],3)
+
 
 plot(val_error~log(nu_seq), type = 'b',pch = 16,xlim=c(-5,2))
-abline(v =log(best_nu), col = "purple", lty = "dashed", lwd = 2)
+abline(v =log(best_nu), col = "purple", lty = "dashed", lwd = 2, main='Validation Error vs Regularization Parameter (nu)')
 
 abline(v =log(best_nu), col = "purple", lty = "dashed", lwd = 2)
 
 abline(v =log(next_best_nu), col = "blue", lty = "dashed", lwd = 2)
 
-text(x = log(best_nu)+0.8, y = 25, labels = paste("best nu=",round(best_nu,3)), 
+text(x = log(best_nu)+0.8, y = 15, labels = paste("best nu:",round(best_nu,3), 'Val Error:',min_val_error,sep = "\n"  ), 
      srt = 0, adj = c(0.5, -0.5), col = "purple",cex=0.85)
 
 
-text(x = log(next_best_nu)-0.88, y = 25, labels = paste("next best nu=",round(next_best_nu,3)), 
+text(x = log(next_best_nu)-0.88, y = 15, labels = paste("next best nu:",round(next_best_nu,3), 'Val Error:',next_min_val_error,sep = "\n"), 
      srt = 0, adj = c(0.5, -0.5), col = "blue",cex=0.85)
 
 ```
@@ -739,10 +743,10 @@ Lowest Validation error is obtained at nu=0.1.771. The closets nu value to the r
 
 ## Response Curve (?)
 
-```{r}
+```{r, fig.width=10, fig.height=6}
 
 library(colorspace)
-color.gradient = function(x, colors=c('blue','red','purple'), colsteps=50)
+color.gradient = function(x, colors=c('blue','white','red','white','purple'), colsteps=50)
 {
   colpal = colorRampPalette(colors)
   return( colpal(colsteps)[ findInterval(x, seq(min(x),max(x), length=colsteps)) ] )
@@ -770,7 +774,7 @@ x2  = seq(-5,+5,length = M)
 xx1 = rep(x1,M)
 xx2 = rep(x2,each = M)
 
-plot(NULL, xlim=c(-5,5),ylim=c(-5,5),xlab='x1',ylab='x2')
+plot(NULL, xlim=c(-6,6),ylim=c(-5,5),xlab='x1',ylab='x2', main='Feed Forard NN Prediction Feature Space Plot')
 
 abline(h= x2,v = x1, lwd = 0.3)
 
@@ -787,6 +791,16 @@ res_fitted=feedforward_nn(XX,YY,res_opt_best_nu$estimate,m,best_nu,activation_fu
 
 points(xx2~xx1,pch = 16, col=color.gradient(res_fitted$second_layer_comp),cex = 0.5)
 points(X_feat[,2]~X_feat[,1], col = cols, pch = 16)
+
+
+# legend(
+#   x = "topright", 
+#   inset = c(-6, 0),
+#   legend = c("0", rep("", M), "1"), # Labels top and bottom
+#   fill = color.gradient(res_fitted$second_layer_comp),               # Feeds the sequence of colors
+#   border = NA,                             
+#   bty = "n"                                
+# )
 
 
 ```
