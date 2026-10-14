@@ -4,8 +4,13 @@ author: ""
 editor: visual
 format:
   pdf:
+    monofont: "Courier New"  
     pdf-engine: lualatex
     fig-pos: 'H'
+    include-in-header:
+      text: |
+        \usepackage{listings}
+    
 linestretch: 1.05
 documentclass: article
 include-in-header:
@@ -26,9 +31,6 @@ include-before-body:
 
     {\Large Machine Learning Assignment 1\par}
     
-    \vspace{0.5cm}
-    
-    {\Large Earthquake Analysis \par}
 
     \vspace{1.5cm}
 
@@ -51,6 +53,12 @@ execute:
   echo: false
   enabled: true
 ---
+
+```{r,set_up,include=F}
+library(dplyr)
+library(tidyverse)
+library(knitr)
+```
 
 ### Question 1
 
@@ -120,8 +128,12 @@ As the order of the polynomial, q, increases, the more nonlinear/complex the$L_q
 ```{r,rt_fun,echo=FALSE,eval=TRUE,fig.height=4}
 
 #| label: fig-subplots
-#| fig-cap: "f(x) function : Two ways"
+#| fig-cap: "f(x) two ways"
+#| fig-subcap: 
+#|   - "f(x): Equation 2"
+#|   - "f(x): Equation 3"
 #| layout-ncol: 2
+
 
 set.seed(30)
 
@@ -295,7 +307,7 @@ for(sig_i in sigmas){
 
 ```
 
-```{r,lq2_fun_plot,echo=FALSE,eval=TRUE}
+```{r,lq2_fun_plot,echo=FALSE,eval=TRUE,fig.height=8}
 set.seed(2023)
 f_x=function(x,sig=0){
   epsi=rnorm(1,0,sig)
@@ -317,38 +329,41 @@ f_x=function(x,sig=0){
 n_sim=seq(1,5,1)
 N=5
 
-plot(NULL, axes = FALSE, xlim=c(-2,2),ylim=c(-0.5,0.5),xlab='xi',ylab='f(xi)',main='Target Function Simulation')
-axis(1, pos = 0)
-axis(2, pos = 0)
+# plot(NULL, axes = FALSE, xlim=c(-2,2),ylim=c(-0.5,0.5),xlab='xi',ylab='f(xi)',main='Target Function Simulation')
+# axis(1, pos = 0)
+# axis(2, pos = 0)
 
+par(mfrow = c(3,2 ))
 colours=c('green','blue','lightblue','orange','red')
 for(i in seq_along(n_sim)){
   xi=sort(runif(N,-2,2))
   y=sapply(xi,f_x)
-  #lines( y~xi,lwd=2,col=colours[1])
+  plot( y~xi,lwd=2,col=colours[1],type='l', main=paste('Target Function Simulation:',i))
   points(y~xi,lwd=2,col=colours[1],pch=1)
   
   # Plot Hypotheses
   h1=lm(y~xi)
   h1_predict=unname(predict(h1,data.frame(xi)))
-  #lines(h1_predict~xi,lwd=2,col=colours[3])
+  lines(h1_predict~xi,lwd=2,col=colours[3])
   points(h1_predict~xi,lwd=2,col=colours[3],pch=1)
   # 
   h2=lm(y~sin(pi*xi)+cos(pi*xi))
   h2_predict=unname(predict(h2,data.frame(xi)))
-  #lines(h2_predict~xi,lwd=1,col=colours[4])
+  lines(h2_predict~xi,lwd=1,col=colours[4])
   points(h2_predict~xi,lwd=1,col=colours[4],pch=1)
   # 
   
-}
-
-legend("bottomright", 
+  legend("bottomright", 
        legend = c("f(x)", "H1", "H2"), # Text labels
        col = c(colours[1],colours[3],colours[4]),                           
        pch = 1, 
        cex=0.95,
        title = "Sample Plots",
        bty='n')  
+
+  
+}
+
 
 
 
@@ -360,14 +375,12 @@ legend("bottomright",
 
 #### b) A priori expectation
 
-Given that the underlying data generating process is non-linear, the non-linear hypothesis would be more suited to fit the data's non-linear behavior or overall shape
+Given that the underlying data generating process is non-linear, the non-linear hypothesis would be more suited to fit the data's non-linear behavior and overall shape.
 
 #### c) Bias Variance for H1 and H2
 
 ```{r,bv_tab,echo=F}
-library(dplyr)
-library(tidyverse)
-library(knitr)
+
 
 # Funtion Arg
 # f_tru: True DGP
@@ -422,9 +435,10 @@ oos_estimate=function(f_true,hyp,sig,N, nsim=1000){
   #  get the averages
   model_bias2=round(mean(bias_store),4)
   model_var=round(mean(pred_var_score),4)
-  both=round(model_bias2+model_var,4)
+  both=round((model_bias2+model_var+sig),4)
   oos_err_est=round(mean(oos_err_store),4)
   estimate_diff=round(abs(both-oos_err_est),4)
+  both_with_noise=both+sig
   
   
   return(list(model_bias2=model_bias2,model_var=model_var,both=both,oos_err_est=oos_err_est,estimate_diff=estimate_diff))
@@ -455,7 +469,11 @@ kable(comaprison_table, col.names = c('Bias','Variance','Both:Bias+Var','OOS Err
 ```{r,bv_plots,echo=F}
 
 #| label: fig-subplots
-#| fig-cap: "Model Bias,Variance and OOS Error Estimate vs Noise Parameter (sigma)"
+#| fig-cap: "f(x) two ways"
+#| fig-subcap: 
+#|   - "Bias vs Noise (sigma)"
+#|   - "Variance vs Noise (sigma)"
+#|   - "E[OOS Error] vs Noise (sigma)"
 #| layout-ncol: 3
 
 
@@ -483,11 +501,11 @@ legend("bottomright",
        col = c('blue','red'),                           
        pch = 1, 
        cex=0.85,
-       title = "Hypothesis Function",
+       title = "Hypothesis",
        bty='n')  
 
 
-plot(NULL,xlim=c(0,0.5),ylim=c(0,0.10),xlab='sigma',ylab='Variance',main=' Model Variance vs Noise Parameter (sigma)',)
+plot(NULL,xlim=c(0,0.5),ylim=c(0,0.09),xlab='sigma',ylab='Variance',main=' Model Variance vs Noise Parameter (sigma)',)
 lines(sigmas,unlist(h1_sigma_function_values[2,]),col='blue',lwd=1.5)
 points(sigmas,unlist(h1_sigma_function_values[2,]),col='blue',pch = 1)
 lines(sigmas,unlist(h2_sigma_function_values[2,]),col='red',lwd=1.5)
@@ -498,35 +516,59 @@ legend("bottomright",
        col = c('blue','red'),                           
        pch = 1, 
        cex=0.85,
-       title = "Hypothesis Function",
+       title = "Hypothesis",
        bty='n')  
 
 
-plot(NULL,xlim=c(0,0.5),ylim=c(0,0.14),xlab='sigma',ylab='E[E_OOS_Err]',main=' Model Expected OOS Error vs Noise Parameter (sigma)',)
+plot(NULL,xlim=c(0,0.5),ylim=c(0.07,0.22),xlab='sigma',ylab='E[E_OOS_Err]',main=' Model Expected OOS Error vs Noise Parameter (sigma)',)
 lines(sigmas,unlist(h1_sigma_function_values[4,]),col='blue',lwd=1.5)
 points(sigmas,unlist(h1_sigma_function_values[4,]),col='blue',pch = 1)
 lines(sigmas,unlist(h2_sigma_function_values[4,]),col='red',lwd=1.5)
 points(sigmas,unlist(h2_sigma_function_values[4,]),col='red',pch = 1)
 
-legend("bottomright", 
+legend("topright", 
        legend = c("h1(x)", "h2(x)"), # Text labels
        col = c('blue','red'),                           
        pch = 1, 
-       cex=0.85,
-       title = "Hypothesis Function",
+       cex=0.75,
+       title = "Hypothesis",
        bty='n')  
 
+h1_oos_estimate_mean=0.0847
+h2_oos_estimate_mean=0.1341
+h1_bv=0.0903
+h2_bv=0.0706
 
+
+# text1=paste('h1(x) Bias+Variance:',h1_bv)
+# text2=paste('h2(x) Bias+Variance:',h2_bv)
+# text3=paste('h1(x) OOS Error Est:',h1_oos_estimate_mean)
+# text4=paste('h2(x) OOS Error Est:',h2_oos_estimate_mean)
+
+# plot_text=paste(text1,text2,text3,text4,sep = "\n")
+# 
+# text(x =0.08, y = 0.15, labels =plot_text , 
+#      srt = 0, adj = c(0.5, -0.5), col = "blue",cex=0.75)
 
 ```
 
-#### e) Interpretaion \*comeback
+#### e) Interpretation \*comeback
 
--   Linear Model has better OOS performance overall averaged across 1000 simulations and varying values of the noise parameter
+-   The expected out of sample error as it relates to the bias and variance of a model is given by
 
--   Non linear model has lower bias but higer variance and the ooposite is observed for variance of the model
+    $$E[Err_{oos}]=Bias^2+Variance+ Irreducible Noise (\varepsilon  )$$
 
--   Given the estimated OOS Error, go with the linear model as it is more parsimonious
+-   RHS:
+
+    -   The linear model , $h1(x)$, has better out-of-sample performance (lower averge OOS error) overall averaged across 1000 simulations over varying values of the noise parameter compared to the more complex model, $h2(x)$.
+
+    -   
+
+-   LHS:
+
+    -   This is also accompanied by a lower average variance across the various noise parameters, this is expected given the that the model is simple relative to $h2(x)$
+
+    -   Given the estimated OOS Error, go with the linear model as it is more parsimonious
 
 ### Q4 Feed Forward Neural Network
 
@@ -772,7 +814,11 @@ for(i in 1:n_nus)
 
 Plot the above
 
-```{r, val_plot, echo=F, fig.width=6, fig.height=5}
+```{r, val_plot, echo=F}
+
+#| fig-width: 6
+#| fig-height: 4
+#| fig-dpi: 300
 
 min_val_error=round(val_error[which(val_error==min(val_error))],3)
 
