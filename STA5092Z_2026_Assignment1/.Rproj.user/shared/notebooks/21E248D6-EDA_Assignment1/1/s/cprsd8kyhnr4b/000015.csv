@@ -1,2 +1,0 @@
-"0","nest_all %>% filter(is.na(HatchDate)) %>% "
-"0","  summarize(n_distinct(BirdID))"

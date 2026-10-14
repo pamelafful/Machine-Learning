@@ -1,6 +1,0 @@
-"0","# Number distribution of adult heplers in the dataset"
-"0","piedbabbler %>% select(GrpSizeAD) %>% "
-"0","  ggplot(aes(x = GrpSizeAD)) +"
-"0","  geom_histogram()+"
-"0","    labs(title = ""Distribution of Ault Heplers"",x='Adult Helper Count')+"
-"0","  theme_minimal()"

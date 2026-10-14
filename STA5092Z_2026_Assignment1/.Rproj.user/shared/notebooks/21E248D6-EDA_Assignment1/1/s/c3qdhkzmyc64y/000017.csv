@@ -1,7 +1,0 @@
-"0",""
-"0","nest_sizes=piedbabbler %>% group_by(NestID) %>% "
-"0","  summarize(nest_size=n_distinct(BirdID))"
-"0",""
-"0","piedbabbler_2=left_join(seasons_val,piedbabbler,by='Season')"
-"0","piedbabbler_2=left_join(piedbabbler_2,nest_sizes,by='NestID')"
-"0","piedbabbler_2"

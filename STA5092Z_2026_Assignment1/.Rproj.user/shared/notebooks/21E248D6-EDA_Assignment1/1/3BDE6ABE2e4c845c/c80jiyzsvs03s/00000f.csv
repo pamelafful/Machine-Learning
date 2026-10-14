@@ -1,6 +1,0 @@
-"0","library(ggplot2)"
-"0",""
-"0","# Create a grid of plots, split by two variables (e.g., cut and color)"
-"0","ggplot(diamonds, aes(carat, price)) +"
-"0","  geom_point(alpha = 0.1) +"
-"0","  facet_grid(cut ~ color) # Rows = cut, Columns = color"
