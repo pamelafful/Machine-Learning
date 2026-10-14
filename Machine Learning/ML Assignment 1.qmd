@@ -60,9 +60,9 @@ library(tidyverse)
 library(knitr)
 ```
 
-### Question 1
+# Question 1
 
-#### a) Legendre Polynomial Plots
+### a) Legendre Polynomial Plots
 
 ```{r,lq_fun,echo=FALSE,eval=TRUE,fig.width=10, fig.height=6}
 
@@ -109,7 +109,7 @@ for(i in 1:length(Qs)){ #c(min(sapply(x,lq,q=5)),max(sapply(x,lq,q=5)))
 
 mtext("Legendre Polynomials of order q", side = 3, outer = TRUE, cex = 1.5, font = 2)
 
-
+#ya
 
 ```
 
@@ -213,7 +213,9 @@ Observations:
 
 2.  $f(x)= \sum_{q=0}^{Q_f} \beta_q L_q(x)$ outputs both positive and negative values \*comeback
 
-### Question 3
+{{< pagebreak >}}
+
+# Question 3
 
 #### a) Hypothesis Function Simulations
 
@@ -570,7 +572,9 @@ h2_bv=0.0706
 
     -   Given the estimated OOS Error, go with the linear model as it is more parsimonious
 
-### Q4 Feed Forward Neural Network
+{{< pagebreak >}}
+
+# Question 4 
 
 #### a) Data Set Plot
 
@@ -579,7 +583,7 @@ dat = read.table('Collider_Data_2022.txt', h = TRUE,stringsAsFactors =T)
 dim(dat)
 ```
 
-```{r,coll_plot,echo=F}
+```{r,coll_plot,echo=F, fig.height=6,fig.width=6}
 
 plot(NULL, xlim=c(min(dat['X1']),max(dat['X1'])),ylim=c(min(dat['X2']),max(dat['X2'])), xlab='X1',ylab='X2',main='Classification Scatter Plot')
 
@@ -599,7 +603,7 @@ legend(x='topleft',
 
 ```
 
-**Observation:** The data does not appear to be linearly separable (in the given 2D feature space) as the data does not seem to have linear boundries between categories/classes. A non-linear neural network seems well suited to capture the non-linear pattern/structure embedded in the data in for the given feature space.
+**Observation:** The data does not appear to be linearly separable (in the given 2D feature space) as the data does not seem to have linear boundaries between categories/classes. Instead the different set of responses look spiralled around each other. A non-linear neural network seems well suited to capture the non-linear pattern/structure embedded in the data in for the given feature space.
 
 b\)
 
@@ -814,7 +818,7 @@ for(i in 1:n_nus)
 
 Plot the above
 
-```{r, val_plot, echo=F}
+```{r, val_plot, echo=F, fig.height=6,fig.width=6}
 
 #| fig-width: 6
 #| fig-height: 4
@@ -850,13 +854,14 @@ text(x = log(best_nu)+0.5, y = 15, labels = paste("best nu:",round(best_nu,3), '
 text(x = log(next_best_nu)-0.88, y = 15, labels = paste("next best nu:",round(next_best_nu,3), 'Val Error:',next_min_val_error,sep = "\n"), 
      srt = 0, adj = c(0.5, -0.5), col = "blue",cex=0.85)
 
+
 ```
 
 \*comeback Lowest Validation error is obtained at nu=0.007. The closets nu value to the right of the obtained leads to an increase in the validation error, whilst the next best nu (in terms of validation error), produces and more complex model. Thus in this case the lowest nu stays!
 
 #### d) Response Curve (?)
 
-```{r, resp_curve,echo=F ,fig.width=10, fig.height=6}
+```{r, resp_curve,echo=F ,fig.width=6, fig.height=6}
 
 library(colorspace)
 color.gradient = function(x, colors=c('blue','white','red','white','purple'), colsteps=50)
