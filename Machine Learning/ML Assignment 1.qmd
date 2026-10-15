@@ -574,7 +574,7 @@ h2_bv=0.0706
 
 {{< pagebreak >}}
 
-# Question 4 
+# Question 4
 
 #### a) Data Set Plot
 
@@ -759,7 +759,8 @@ nu = 0
 
 # Test the above and Get initial observations predictions, not optimized
 
-feedforward_nn(X_input,y_input,theta_rand,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)#res_opt$estimate
+feedforward_nn(X_input,y_input,theta_rand,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)$second_layer_comp[,1]
+#res_opt$estimate
 
 
 
@@ -796,7 +797,7 @@ obj_pen = function(pars)
 }
 
 n_nus = 15
-nu_seq= exp(seq(-5,1,length = n_nus))
+nu_seq= exp(seq(-2,2,length = n_nus))
 val_error = rep(0,n_nus)
 for(i in 1:n_nus)
 {
@@ -818,53 +819,56 @@ for(i in 1:n_nus)
 
 Plot the above
 
-```{r, val_plot, echo=F, fig.height=6,fig.width=6}
+```{r, val_plot, echo=F, fig.height=5,fig.width=7}
 
-#| fig-width: 6
-#| fig-height: 4
 #| fig-dpi: 300
 
-min_val_error=round(val_error[which(val_error==min(val_error))],3)
+min_val_error=min(val_error)
+
+
 
 best_nu_index=which(val_error==min(val_error))
 best_nu=nu_seq[best_nu_index];
 
 
-next_val_error=val_error[which(val_error!=min(val_error))]
+# Compare the error of the nu the right of the best
 
-next_best_nu_seq=nu_seq[which(nu_seq!=best_nu)]
+next_val_error=val_error[(best_nu_index+1):length(val_error)]
+
+next_seq=nu_seq[(best_nu_index)+1:length(nu_seq)]
+
+next_best_nu=next_seq[which.min(next_val_error)] ;
+
+next_min_val_error=min(next_val_error)
 
 
-next_best=which(next_val_error==min(next_val_error))
-next_best_nu=next_best_nu_seq[next_best];
-
-next_min_val_error=round(next_val_error[which(next_val_error==min(next_val_error))],3)
 
 
-plot(val_error~log(nu_seq), type = 'b',pch = 16,xlim=c(-6,2), main='Validation Error vs Regularization Parameter (nu)')
-abline(v =log(best_nu), col = "purple", lty = "dashed", lwd = 2)
+plot(val_error~log(nu_seq), type = 'b',pch = 16,xlim=c(min(log(nu_seq)),max(log(nu_seq))+1), main='Validation Error vs Regularization Parameter (nu)', xlab='lambda (log)',ylab='validation error')
+
 abline(v =log(best_nu), col = "purple", lty = "dashed", lwd = 2)
 
 abline(v =log(next_best_nu), col = "blue", lty = "dashed", lwd = 2)
 
-text(x = log(best_nu)+0.5, y = 15, labels = paste("best nu:",round(best_nu,3), 'Val Error:',min_val_error,sep = "\n"  ), 
-     srt = 0, adj = c(0.5, -0.5), col = "purple",cex=0.85)
+text(x = log(best_nu)-0.35, y = 8, labels = paste("best nu:",round(best_nu,3), 'Val Error:',"-1.47e-9",sep = "\n"),
+     srt = 0, adj = c(0.5, -0.5), col = "purple",cex=0.68)
 
 
-text(x = log(next_best_nu)-0.88, y = 15, labels = paste("next best nu:",round(next_best_nu,3), 'Val Error:',next_min_val_error,sep = "\n"), 
-     srt = 0, adj = c(0.5, -0.5), col = "blue",cex=0.85)
-
+text(x = log(next_best_nu)+0.4, y = 8, labels = paste("next best nu:",round(next_best_nu,3), 'Val Error:',"-6.23e-9",sep = "\n"),
+     srt = 0, adj = c(0.5, -0.5), col = "blue",cex=0.68)
+# 
+# 
 
 ```
 
-\*comeback Lowest Validation error is obtained at nu=0.007. The closets nu value to the right of the obtained leads to an increase in the validation error, whilst the next best nu (in terms of validation error), produces and more complex model. Thus in this case the lowest nu stays!
+The lowest validation error is generated at $\lambda_{min}=2.356$ with an associated validation making for a relatively stricter and simpler model. The next best error to the right of this minimum is obtained at $\lambda_{1SE}=3.136$, offering stricter control over the complexity of the network and thus more parsimonius model, decreasing the likelihood of overfitting to the training data.
 
 #### d) Response Curve (?)
 
 ```{r, resp_curve,echo=F ,fig.width=6, fig.height=6}
 
 library(colorspace)
-color.gradient = function(x, colors=c('blue','white','red','white','purple'), colsteps=50)
+color.gradient = function(x, colors=c('blue','white','red'), colsteps=50)
 {
   colpal = colorRampPalette(colors)
   return( colpal(colsteps)[ findInterval(x, seq(min(x),max(x), length=colsteps)) ] )
@@ -884,7 +888,7 @@ res_opt_best_nu = nlm(obj_pen,theta_rand, iterlim = 1000)
 
 
 #Resp curve
-cols=c('blue','red','purple')
+#cols=c('blue','purple','red')
 
 M   = 160
 x1  = seq(-5,+5,length = M)
@@ -892,7 +896,7 @@ x2  = seq(-5,+5,length = M)
 xx1 = rep(x1,M)
 xx2 = rep(x2,each = M)
 
-plot(NULL, xlim=c(-6,6),ylim=c(-5,5),xlab='x1',ylab='x2', main='Feed Forard NN Prediction Feature Space Plot')
+plot(NULL, xlim=c(-5,5),ylim=c(-5,5),xlab='x1',ylab='x2', main='Feed Forard NN Prediction Feature Space Plot')
 
 abline(h= x2,v = x1, lwd = 0.3,col='white')
 
@@ -905,20 +909,22 @@ YY2=rep(1,M^2)
 YY3=rep(1,M^2)
 YY=cbind(YY1,YY2,YY3)
 
+colors=c('blue','red','purple')
+
 res_fitted=feedforward_nn(XX,YY,res_opt_best_nu$estimate,m,best_nu,activation_fun_2=soft_max,activation_fun_1=tanh) 
 
-points(xx2~xx1,pch = 16, col=color.gradient(res_fitted$second_layer_comp),cex = 0.5)
-points(X_feat[,2]~X_feat[,1], col = cols, pch = 16)
+points(xx2~xx1,pch = 16, col=color.gradient(apply(res_fitted$second_layer_comp,2,max)),cex = 2)
+#points(X_feat[,2]~X_feat[,1], col = colors, pch = 16)
 
 
-# legend(
-#   x = "topright", 
-#   inset = c(-6, 0),
-#   legend = c("0", rep("", M), "1"), # Labels top and bottom
-#   fill = color.gradient(res_fitted$second_layer_comp),               # Feeds the sequence of colors
-#   border = NA,                             
-#   bty = "n"                                
-# )
+legend(
+  x = "topright",
+  inset = c(-6, 0),
+  legend = c("0", rep("", M), "1"), # Labels top and bottom
+  fill = color.gradient(res_fitted$second_layer_comp),               # Feeds the sequence of colors
+  border = NA,
+  bty = "n"
+)
 
 # Think about it!
 
