@@ -667,10 +667,10 @@ feedforward_nn=function(X_input,y_input,theta,m,nu,activation_fun_2=soft_max,act
 
   X=t(as.matrix(X_input)) # obs as cols
   
-  index_chunk1=p*m#W1
-  index_chunk2=index_chunk1+1#W2
-  index_chunk3=((index_chunk2+(m*d2))-1)+1#B1
-  index_chunk4=((index_chunk3+m)-1)+1#B2
+  index_chunk1=p*m #W1
+  index_chunk2=index_chunk1+1 #W2
+  index_chunk3=((index_chunk2+(m*d2))-1)+1 #B1
+  index_chunk4=((index_chunk3+m)-1)+1 #B2
 
     
   # weight matrix from input layer to hidden layer
@@ -736,33 +736,33 @@ return(list(first_layer_comp = first_layer_comp,second_layer_comp = second_layer
 ```{r,code_check,echo=F,include=F}
 
 # Set initial arguments
-y_input=Y
-X_input=X_feat
+# y_input=Y
+# X_input=X_feat
+# # 
+# nu  = 0
+# m   = 15
 # 
-nu  = 0
-m   = 3
-
-p     = dim(X_input)[2]
-q     = dim(as.matrix(Y))[2]
-npars = p*m+m*q+m+q
-theta_rand = runif(npars,-1,1)
-nu = 0
-# obj_pen = function(pars)
-# {
-#   res_model = feedforward_nn(X_input,y_input,pars,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)
-#   return(res_model$CE_error)
-# }
+# p     = dim(X_input)[2]
+# q     = dim(as.matrix(Y))[2]
+# npars = p*m+m*q+m+q
+# theta_rand = runif(npars,-1,1)
+# nu = 0
+# # obj_pen = function(pars)
+# # {
+# #   res_model = feedforward_nn(X_input,y_input,pars,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)
+# #   return(res_model$CE_error)
+# # }
+# # 
+# # 
+# # # Fit the neural network using a standard optimizer in R:
+# # res_opt = nlm(obj_pen,theta_rand, iterlim = 1000)
+# 
+# # Test the above and Get initial observations predictions, not optimized
+# 
+# feedforward_nn(X_input,y_input,theta_rand,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)$second_layer_comp[,1]
+# #res_opt$estimate
 # 
 # 
-# # Fit the neural network using a standard optimizer in R:
-# res_opt = nlm(obj_pen,theta_rand, iterlim = 1000)
-
-# Test the above and Get initial observations predictions, not optimized
-
-feedforward_nn(X_input,y_input,theta_rand,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)$second_layer_comp[,1]
-#res_opt$estimate
-
-
 
 ```
 
@@ -774,15 +774,12 @@ set.seed(2022)
 y_input=Y
 X_input=X_feat
 # 
-nu  = 0
-m   = 3
-
+m   = 25
 p     = dim(X_input)[2]
 q     = dim(as.matrix(Y))[2]
 
 npars = p*m+m*q+m+q
 theta_rand = runif(npars,-1,1)
-nu = 0
 N       = dim(X_feat)[1]
 set     = sample(1:N,0.5*N,replace = FALSE) #50 50 split
 X_train = X_feat[set,,drop = FALSE] #
@@ -861,22 +858,67 @@ text(x = log(next_best_nu)+0.4, y = 8, labels = paste("next best nu:",round(next
 
 ```
 
+Model Parameters:
+
 The lowest validation error is generated at $\lambda_{min}=2.356$ with an associated validation making for a relatively stricter and simpler model. The next best error to the right of this minimum is obtained at $\lambda_{1SE}=3.136$, offering stricter control over the complexity of the network and thus more parsimonius model, decreasing the likelihood of overfitting to the training data.
 
 #### d) Response Curve (?)
 
-```{r, resp_curve,echo=F ,fig.width=6, fig.height=6}
+```{r, resp_curve,echo=F,fig.height=5,fig.width=7}
 
 library(colorspace)
-color.gradient = function(x, colors=c('blue','white','red'), colsteps=50)
-{
-  colpal = colorRampPalette(colors)
-  return( colpal(colsteps)[ findInterval(x, seq(min(x),max(x), length=colsteps)) ] )
+
+# Fit probability color mapping for each class onto the feature space
+
+
+# Helper functions
+
+# Assign color pallet based on indexing
+  ass_pallet=function(ind_val,col_steps=50){
+    if(ind_val==1){
+      
+      # Class 1, high to low prob color mapping
+      pallet=colorRampPalette(c("lightblue", "blue")) 
+      
+    }
+    
+    if(ind_val==2){
+      
+      # Class 2
+      pallet=colorRampPalette(c("mistyrose", "red"))
+      
+    }
+   if(ind_val==3){
+     
+     # Class 3
+      pallet=colorRampPalette(c("mediumpurple1", "purple"))
+      
+   }
+    
+    return(pallet(col_steps))
+  }
+
+  
+# Assign a color to prediction based on its class and strength of probability value
+  
+col_pred=function(x,col_steps=50){
+  # x=prediction matrix from ff nn
+  
+  max_ind=apply(x,2,which.max) #get index of max probability
+  max_prob=apply(x,2,max) # get value of max probability
+  col_range=seq(0,1,length.out = col_steps) 
+  col_pallet=sapply(max_ind,ass_pallet) #prob colors for each class, matrix
+  color_indices= findInterval(max_prob, col_range) # for each obs, find its indx in a range of 0 to 1
+  
+  col_pallet_N=ncol(col_pallet)
+  selected_cols= col_pallet[cbind(color_indices, seq_len(col_pallet_N))]
+  
+  return(selected_cols)
 }
 
-
-
-# use this to fit model again 
+pal1 <- ass_pallet(1)
+pal2 <- ass_pallet(2)
+pal3 <- ass_pallet(3)
 
 obj_pen = function(pars)
 {
@@ -887,8 +929,6 @@ obj_pen = function(pars)
 res_opt_best_nu = nlm(obj_pen,theta_rand, iterlim = 1000)
 
 
-#Resp curve
-#cols=c('blue','purple','red')
 
 M   = 160
 x1  = seq(-5,+5,length = M)
@@ -896,9 +936,14 @@ x2  = seq(-5,+5,length = M)
 xx1 = rep(x1,M)
 xx2 = rep(x2,each = M)
 
-plot(NULL, xlim=c(-5,5),ylim=c(-5,5),xlab='x1',ylab='x2', main='Feed Forard NN Prediction Feature Space Plot')
+layout(matrix(1:4, nrow = 1),
+       widths = c(5, 0.7, 0.7, 0.7))
 
-abline(h= x2,v = x1, lwd = 0.3,col='white')
+par(mar = c(4, 4, 3, 1))
+
+plot(NULL, xlim=c(-5,5),ylim=c(-5,5),xlab='x1',ylab='x2', main='Feed Forward NN Response Curve')
+
+abline(h= x2,v = x1, lwd = 0.3,col='black')
 
 
 
@@ -909,24 +954,79 @@ YY2=rep(1,M^2)
 YY3=rep(1,M^2)
 YY=cbind(YY1,YY2,YY3)
 
-colors=c('blue','red','purple')
+
 
 res_fitted=feedforward_nn(XX,YY,res_opt_best_nu$estimate,m,best_nu,activation_fun_2=soft_max,activation_fun_1=tanh) 
 
-points(xx2~xx1,pch = 16, col=color.gradient(apply(res_fitted$second_layer_comp,2,max)),cex = 2)
-#points(X_feat[,2]~X_feat[,1], col = colors, pch = 16)
+points(xx2~xx1,pch = 16, col=col_pred(res_fitted$second_layer_comp) ,cex = 2)
+
+points(dat[dat$Yi1==1,]$X1,dat[dat$Yi1==1,]$X2,col='blue',pch=10)
+
+points(dat[dat$Yi2==1,]$X1,dat[dat$Yi2==1,]$X2,col='red',pch=10)
+
+points(dat[dat$Yi3==1,]$X1,dat[dat$Yi3==1,]$X2,col='purple',pch=10)
+
+add_colour_bar = function(pal, class_name) {
+
+  par(mar = c(4, 0.5, 3, 2))
+
+  probs <- seq(0, 1, length.out = length(pal))
+
+  # Draw continuous-looking gradient
+  z = matrix(rep(probs, each = 2), nrow = 2)
+
+  image(x = c(0, 1),
+        y = probs,
+        z = z,
+        col = pal,
+        zlim = c(0, 1),
+        axes = FALSE,
+        xlab = "",
+        ylab = "",
+        main = class_name)
+
+  axis(4, at = seq(0, 1, by = 0.2),
+       las = 1, cex.axis = 0.75)
+
+  box()
+}
+
+#colour mapping
+add_colour_bar(pal1, "Class 1")
+add_colour_bar(pal2, "Class 2")
+add_colour_bar(pal3, "Class 3")
 
 
-legend(
-  x = "topright",
-  inset = c(-6, 0),
-  legend = c("0", rep("", M), "1"), # Labels top and bottom
-  fill = color.gradient(res_fitted$second_layer_comp),               # Feeds the sequence of colors
-  border = NA,
-  bty = "n"
-)
+```
 
-# Think about it!
+The model produces three distinct regions over the feature space that correspond to the respective (max) probability assignments of each class:
 
+-   Class 1 labels were completely misclassified by the model, with none of the regions predicted for that class from the model containing any of the actual observations for that label. The model also does a poor job of distinguishing between labels in these regions, with very low assignment probabilities to ths class.
 
+-   For observations with values between \[-4,0\] for X1 and between \[-4,-2\], the model mostly predicts Class 2 with relatively high probabilities (close to 1). As the values for X1 increase in the X1 dimension, still bounded in the same x2 interval, predicted class 2 probabilities exhibit much lower values for that class. The prediction region from the model was only able to capture a portion of the actual labels for that class.
+
+-   Class 3 probability region dominates the feature space. The
+
+```{r}
+
+library(dplyr)
+x=res_fitted$second_layer_comp
+
+max_ind=apply(x,2,which.max) #get index of max probability
+max_prob=apply(x,2,max) 
+
+class_2=res_fitted$second_layer_comp[,which(max_ind==2)]
+which.min(apply(class_2,2,max))
+# ncol(class_2)
+# length(dat[dat$Yi2==1,]$X1)
+# 
+# 
+# which(max_ind==2)
+
+# get value of max probability
+#unique(max_ind)
+lattice_class_pred=data.frame(cbind(XX,max_ind,max_prob))
+lattice_class_pred %>% filter((max_ind==2) & (max_prob<=0.34)) %>% summary()
+
+class_2[,10211]
 ```
