@@ -1,0 +1,2 @@
+"0",""
+"0","points(dat[dat$Yi3==1,]$X1,dat[dat$Yi3==1,]$X2,col='purple',pch=10)"

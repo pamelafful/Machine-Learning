@@ -1,0 +1,186 @@
+rm(list = ls())
+set.seed(2022)
+# A Function for creating continuous colour palette. I.e., colour gradient bins and
+# associated colours:
+library(colorspace)
+color.gradient = function(x, colors=c('magenta','white','lightblue'), colsteps=50)
+{
+  colpal = colorRampPalette(colors)
+  return( colpal(colsteps)[ findInterval(x, seq(min(x),max(x), length=colsteps)) ] )
+}
+
+# Read in the data and populate a design-matrix + response matrix:
+dat = read.table('Spiral_Data_2022.txt',h = T)
+X = dat[,-3]
+Y = matrix((dat[,3] == 1)*1,ncol = 1)
+
+# Plot the data to see the pattern:
+cols = c('red','blue')
+
+plot(X[,2]~X[,1],col  = cols[Y+1], pch = 16)
+
+
+# Define activation functions and their first derivatives. 
+# Define the objective g and its first derivative w.r.t. the final layer of activation.
+sig1 = function(z)
+{
+   tanh(z)  
+}
+sig1. = function(z)
+{
+   1-tanh(z)^2
+}
+sig2 = function(z)
+{
+   1/(1+exp(-z))
+}
+sig2. = function(z)
+{
+   sig2(z)*(1-sig2(z))
+}
+g     = function(yhat,y)  ## Ci-s
+{
+     -(y*log(yhat)+(1-y)*log(1-yhat))	    
+}
+g.     = function(yhat,y)
+{
+	   -(y/yhat-(1-y)/(1-yhat))
+}
+neural_net = function(X,Y,theta,m,nu=0)
+{
+
+   N = dim(X)[1]
+   p = dim(X)[2]
+   q = dim(Y)[2]
+
+   index = 1:(p*m)
+   W1    = matrix(theta[index],p,m)
+   index = max(index)+1:(m*q)
+   W2    = matrix(theta[index],m,q)
+   index = max(index)+1:(m)
+   b1    = matrix(theta[index],m,1)
+   index = max(index)+1:(q)
+   b2    = matrix(theta[index],q,1)
+   
+
+   out   = rep(0,N)
+   error = rep(0,N)
+   # Define storage for gradient matrices and vectors 
+
+   ones = matrix(1,N,1)
+
+    A0  = t(X)
+    Z1  = t(W1)%*%A0+b1%*%t(ones)
+    A1  = sig1(Z1)
+    Z2  = t(W2)%*%A1+b2%*%t(ones)
+    A2  = sig2(Z2)
+
+    Y_hat = t(A2)
+    
+    # Evaluate the working gradients:
+    D2 = g.(A2,t(Y))*sig2.(Z2) # Step A
+    D1 = (W2%*%D2)*sig1.(Z1)   # Step B
+    	
+    # Evaluate gradient matrices and vectors:
+    db1 = D1%*%ones            # Step C (Biases)
+    db2 = D2%*%ones
+    
+    dW1 = A0%*%t(D1) +nu*2*W1           # Step C (Weights)
+    dW2 = A1%*%t(D2) +nu*2*W2          # Step C (Weights)
+    
+    # Evaluate error function:
+    error =  g(A2,t(Y)) # Ci s 
+   #}
+   E1    = sum(error)  # Ctot
+   E2    = E1+nu*(sum(W1^2)+sum(W2^2))
+
+   return(list(grad = c(dW1,dW2,db1,db2)/N,Y_hat = Y_hat, E1 = E1/N, E2 = E2/N))
+}
+
+
+p = dim(X)[2]
+m = 10
+q = dim(Y)[2]
+
+# We need to know the number of parameters in the network:
+npars = p*m+m*q+m+q
+npars
+
+# Choose some random point in the parameter space and evaluate
+# the gradients of the objective function w.r.t. each par:
+theta_rand = runif(npars,-2,2)
+
+# neural_net should return the exact gradients:
+nu = 0.2
+res = neural_net(X,Y,theta_rand,m,nu)
+res
+
+
+ K  = 100
+ x1 = seq(min(X[,1]),max(X[,1]), length = K)
+ x2 = seq(min(X[,2]),max(X[,2]), length = K)
+
+X1 = rep(x1,K)
+X2 = rep(x2,each = K)
+XX = cbind(X1,X2)
+YY = matrix(0,K^2,1)
+
+
+
+# Write a function that applies the gradient descent procedure for your 
+# Neural network 
+grad_dec = function(theta_start,h = 1/100, iterations = 1000)
+{
+   # Initialise:
+	 theta     = theta_start
+	 errors    = rep(NA,iterations) 
+	 
+	 N         = dim(X)[1]
+	 set       = sample(1:N,1*N,replace = FALSE)
+	 res       = neural_net(X[set,,drop=FALSE],Y[set,,drop=FALSE],theta,m,nu)
+	 errors[1] = res$E2 
+	 
+   # Iterate:
+	 for(i in 2:iterations)
+	 {
+	    # Apply updating equation:
+	 	  theta     = theta-h*res$grad
+	    set       = sample(1:N,1*N,replace = FALSE)
+	    res       = neural_net(X[set,,drop=FALSE],Y[set,,drop=FALSE],theta,m,nu)
+	    errors[i] = res$E2 
+	    
+	 	  if(i%%250==0)
+	 	  {
+	 	  	print(paste0('Iteration = ', i))
+	 	  	
+	 	  	par(mfrow = c(2,2))
+	 	  	plot(errors,type = 's',col = 'blue', main = paste0('Iteration ',i))
+	 	  	plot(theta,type = 'h',lwd = 2, main = 'Parameters', ylim = c(-3,3))
+	 	  	plot(res$grad,type = 'h',lwd = 2, main = 'Gradients',ylim = c(-1,1)*0.01)
+	 	  	abline(h = c(-1,1)*0.01 , lty =2)
+	 	  	res_fitted = neural_net(XX,YY,theta,m,nu)
+        plot(XX[,2]~XX[,1],col = color.gradient(res_fitted$Y_hat),pch = 16,cex = 0.5)
+	 	  	Sys.sleep(0.05)
+	 	 }
+	 }
+	 ret = list(errors = errors, theta_hat = theta)
+	 return(ret)
+}
+
+
+theta_rand = runif(npars,-2,2)
+#windows() #quartz()
+
+# Evaluate for a particular step-size and number of iterations:
+res_opt   = grad_dec(theta_rand, 0.05,15000)
+
+# Plot the error trajectory:
+plot(res_opt$errors, type  = 's', col = 'blue') # Trace plot for conv. analysis. 
+#plot(diff(res_opt$errors), type  = 's', col = 'blue',ylim = c(-1,1)*0.001)
+#res_fit  = neural_net(X,Y,res_opt$theta,m,lambda)
+
+# Draw a response curve over the 2D input space to see
+# what pattern the neural network predicts
+
+
+

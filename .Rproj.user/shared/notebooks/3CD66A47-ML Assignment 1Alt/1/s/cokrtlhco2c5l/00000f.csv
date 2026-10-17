@@ -1,0 +1,7 @@
+"0","dat = read.table('Collider_Data_2022.txt', h = TRUE,stringsAsFactors =T) "
+"0","dim(dat)"
+"1","[1]"
+"1"," 360"
+"1","   5"
+"1","
+"

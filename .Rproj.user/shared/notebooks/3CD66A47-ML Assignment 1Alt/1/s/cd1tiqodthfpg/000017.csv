@@ -1,0 +1,8 @@
+"0",""
+"0","legend(x='topleft',"
+"0","       legend = c(""Yi1"", 'Yi2','Yi3'),"
+"0","       col=c('blue','red','purple'),"
+"0","       pch=c(10,10,10),"
+"0","       title = ""Groups"","
+"0","       cex=0.85,"
+"0","       bty = ""o"")"

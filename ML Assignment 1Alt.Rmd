@@ -1,0 +1,313 @@
+---
+title: ""
+author: ""
+editor: visual
+format:
+  pdf:
+    monofont: "Courier New"  
+    pdf-engine: lualatex
+    fig-pos: 'H'
+    include-in-header:
+      text: |
+        \usepackage{listings}
+    
+linestretch: 1.05
+documentclass: article
+include-in-header:
+  text: |
+    \usepackage{graphicx}
+
+include-before-body:
+  text: |
+    \begin{titlepage}
+    \centering
+
+    {\Large University of Cape Town\par}
+    \vspace{0.8cm}
+
+    \includegraphics[width=0.35\textwidth]{CopyOfUCTLogo.jpg}
+
+    \vspace{2cm}
+
+    {\Large Machine Learning Assignment 1\par}
+    
+
+    \vspace{1.5cm}
+
+    {\large Pamela Afful\par}
+
+    \vspace{0.5cm}
+
+    {\large Student Number: AFFPAM001\par}
+
+    \vfill
+
+    {\large \today\par}
+
+    \end{titlepage}
+    
+execute: 
+  cache: true
+  warning: false
+  message: false
+  echo: false
+  enabled: true
+---
+
+```{r}
+dat = read.table('Collider_Data_2022.txt', h = TRUE,stringsAsFactors =T) 
+dim(dat)
+```
+
+```{r}
+plot(NULL, xlim=c(min(dat['X1']),max(dat['X1'])),ylim=c(min(dat['X2']),max(dat['X2'])), xlab='X1',ylab='X2',main='Classification Scatter Plot')
+
+points(dat[dat$Yi1==1,]$X1,dat[dat$Yi1==1,]$X2,col='blue',pch=10)
+
+points(dat[dat$Yi2==1,]$X1,dat[dat$Yi2==1,]$X2,col='red',pch=10)
+
+points(dat[dat$Yi3==1,]$X1,dat[dat$Yi3==1,]$X2,col='purple',pch=10)
+
+legend(x='topleft',
+       legend = c("Yi1", 'Yi2','Yi3'),
+       col=c('blue','red','purple'),
+       pch=c(10,10,10),
+       title = "Groups",
+       cex=0.85,
+       bty = "o")
+```
+
+```{r}
+soft_max = function(z) {  # assume z is a matrix
+
+  z_shifted = sweep(z, 2, apply(z, 2, max), FUN = "-") # subtract maximum from each column
+
+ 
+  num = exp(z_shifted)
+
+  # Sum exponentials within each column
+  sums = colSums(num)
+
+  # Normalize each column
+  result = sweep(num, 2, sums, FUN = "/")
+
+  return(result)
+}
+```
+
+```{r}
+X_feat=cbind(dat$X1,dat$X2)
+Y=cbind(dat$Yi1,dat$Yi2,dat$Yi3)
+
+choose_label=function(vector_prob){
+  
+  labels_vec=ifelse(vector_prob==max(vector_prob),1,0)
+  return(labels_vec)
+  
+}
+
+
+feedforward_nn=function(X_input,y_input,theta,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh){
+  
+  # theta is the vector of initial weights
+  #it is of length p*m+m*q+m+q (W1+W2+b1+b2)
+  # in this code q=d2
+
+  y=as.matrix(y_input)
+  
+  # Initialize relevant layer matrices
+  
+  
+  N=dim(X_input)[1] # nr obs
+  p=dim(X_input)[2] # nr of cols=nr of nodes in input layer for obs i
+  #1. nr of nodes in input layer=2 features across N observations
+
+  # Going into layer 1
+  d0=p # nodes in input
+  d1=m # nodes in hidden
+  d2=dim(y)[2]
+
+  X=t(as.matrix(X_input)) # obs as cols
+  
+  index_chunk1=p*m#W1
+  index_chunk2=index_chunk1+1#W2
+  index_chunk3=((index_chunk2+(m*d2))-1)+1#B1
+  index_chunk4=((index_chunk3+m)-1)+1#B2
+
+    
+  # weight matrix from input layer to hidden layer
+  W1=matrix(theta[1:(index_chunk1)],nrow=d0,ncol=d1) 
+  
+  #weight matrix from hidden layer to output layer
+  W2=matrix(theta[(index_chunk2):((index_chunk2+(m*d2))-1)],nrow=d1,ncol=d2) # 
+  
+  # bias matrix going into hidden layer
+  b1=matrix(theta[(index_chunk3):((index_chunk3+m)-1)],nrow=m,ncol=1) 
+  
+  b1_ones_matrix=matrix(1,nrow=1,ncol=N)
+  b1_mat=b1%*%b1_ones_matrix
+
+  
+  # bias matrix going  into output/layer 2
+  b2=matrix(theta[index_chunk4:((index_chunk4+d2)-1)],nrow=d2,ncol=1)
+  b2_ones_matrix=matrix(1,nrow=1,ncol=N) # Repeat this N times
+  b2_mat=b2%*%b2_ones_matrix
+  
+ # Do one forward calc and get prediction
+ 
+  # first layer computation
+  first_layer_comp=t(W1)%*%X+b1_mat
+
+  # apply activation
+  first_layer_comp=activation_fun_1(first_layer_comp)
+
+
+  second_layer_comp=activation_fun_2(t(W2)%*%first_layer_comp+b2_mat)
+  second_layer_comp_no_activation=t(W2)%*%first_layer_comp+b2_mat
+
+
+  #predictions across N observations 
+  # prediction = max probability
+  y_preds=second_layer_comp # 3 by N
+  y_pred_label=apply(y_preds,1,choose_label) # one hot encoding
+  
+  
+   # control for very small values in the matrix
+  log_compute= function(mat, threshold = 1e-4) {
+    ifelse(mat < threshold, log1p(mat), log(mat))
+  }
+  
+   
+  CE_mat=t(y)*log_compute(y_preds)
+  CE_error=-mean(apply(CE_mat,1,sum)) # normal non_penalized oobj
+  
+  CE_error_L2=CE_error+(nu/N)*(sum(W1^2)+sum(W2^2)) # regularized obj
+
+  
+
+return(list(first_layer_comp = first_layer_comp,second_layer_comp = second_layer_comp, CE_error = CE_error, CE_error_L2 = CE_error_L2,second_layer_comp_no_activation=second_layer_comp_no_activation))
+
+  
+}
+```
+
+```{r}
+# Set initial arguments
+y_input=Y
+X_input=X_feat
+# 
+nu  = 0
+m   = 3
+
+p     = dim(X_input)[2]
+q     = dim(as.matrix(Y))[2]
+npars = p*m+m*q+m+q
+theta_rand = runif(npars,-1,1)
+nu = 0
+# obj_pen = function(pars)
+# {
+#   res_model = feedforward_nn(X_input,y_input,pars,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)
+#   return(res_model$CE_error)
+# }
+# 
+# 
+# # Fit the neural network using a standard optimizer in R:
+# res_opt = nlm(obj_pen,theta_rand, iterlim = 1000)
+
+# Test the above and Get initial observations predictions, not optimized
+
+feedforward_nn(X_input,y_input,theta_rand,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)#res_opt$estimate
+
+
+```
+
+```{r}
+set.seed(2022)
+
+y_input=Y
+X_input=X_feat
+# 
+m   = 3
+
+p     = dim(X_input)[2]
+q     = dim(as.matrix(Y))[2]
+
+npars = p*m+m*q+m+q
+theta_rand = runif(npars,-1,1)
+nu = 0
+N       = dim(X_feat)[1]
+set     = sample(1:N,0.5*N,replace = FALSE) #50 50 split
+X_train = X_feat[set,,drop = FALSE] #
+Y_train = Y[set,,drop = FALSE]
+X_val   = X_feat[-set,,drop = FALSE]
+Y_val   = Y[-set,,drop = FALSE]
+
+obj_pen = function(pars)
+{
+  res_model = feedforward_nn(X_train,Y_train,pars,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)  
+  return(res_model$CE_error_L2) # Reg Obj
+}
+
+n_nus = 15
+nu_seq= exp(seq(-5,1,length = n_nus))
+val_error = rep(0,n_nus)
+for(i in 1:n_nus)
+{
+	nu = nu_seq[i] # Pick nu
+	res_opt = nlm(obj_pen,theta_rand, iterlim = 1000) # Fit for that nu
+	
+	#Evaluate on Validation Set with optimal parameters and particular nu
+	
+	res_val= feedforward_nn(X_val,Y_val,res_opt$estimate,m,nu,activation_fun_2=soft_max,activation_fun_1=tanh)
+	
+	# Get reg validation Error
+  val_error[i] = res_val$CE_error_L2
+  
+  #print(paste0('Validation run:',i,' nu = ', nu))
+}
+
+```
+
+```{r}
+#| fig-width: 6
+#| fig-height: 4
+#| fig-dpi: 300
+
+min_val_error=round(val_error[which(val_error==min(val_error))],3)
+
+best_nu_index=which(val_error==min(val_error))
+best_nu=nu_seq[best_nu_index];
+
+
+next_val_error=val_error[which(val_error!=min(val_error))]
+
+next_best_nu_seq=nu_seq[which(nu_seq!=best_nu)]
+
+
+next_best=which(next_val_error==min(next_val_error))
+next_best_nu=next_best_nu_seq[next_best];
+
+next_min_val_error=round(next_val_error[which(next_val_error==min(next_val_error))],3)
+
+
+plot(val_error~nu_seq, type = 'b',pch = 16, main='Validation Error vs Regularization Parameter (nu)')
+
+nu_seq
+
+which(val_error>10)
+val_error
+
+
+
+abline(v =log(best_nu), col = "purple", lty = "dashed", lwd = 2)
+
+
+abline(v =log(next_best_nu), col = "blue", lty = "dashed", lwd = 2)
+
+text(x = log(best_nu)+0.5, y = 15, labels = paste("best nu:",round(best_nu,3), 'Val Error:',min_val_error,sep = "\n"  ), 
+     srt = 0, adj = c(0.5, -0.5), col = "purple",cex=0.85)
+
+
+text(x = log(next_best_nu)-0.88, y = 15, labels = paste("next best nu:",round(next_best_nu,3), 'Val Error:',next_min_val_error,sep = "\n"), 
+     srt = 0, adj = c(0.5, -0.5), col = "blue",cex=0.85)
+```

@@ -1,0 +1,8 @@
+"0",""
+"0","q_cols=c('blue','red','magenta','lightblue','purple','green')"
+"0",""
+"0","for(i in 1:length(alpha_qs)){"
+"0","  alpha=alpha_qs[i]"
+"0","  "
+"0","  lines(x,sapply(x,target_alpha,alpha_q=alpha,Qf=5),col=q_cols[i],lwd=1.2)"
+"0","}"
