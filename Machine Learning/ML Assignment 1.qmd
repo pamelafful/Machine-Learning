@@ -302,7 +302,7 @@ for(sig_i in sigmas){
     
   }
 
-  
+  #
 }
   #concat all the matrices from n simulations of each N,sig combination
   all_matrix=rbind(error_diffs)
