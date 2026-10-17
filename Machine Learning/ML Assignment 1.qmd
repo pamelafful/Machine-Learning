@@ -4,6 +4,7 @@ author: ""
 editor: visual
 format:
   pdf:
+    fontsize: 12pt
     monofont: "Courier New"  
     pdf-engine: lualatex
     fig-pos: 'H'
@@ -209,7 +210,7 @@ legend("topleft",
 
 Observations:
 
-1.   $f(x) = \sum_{q=0}^ {Q_f} \alpha_q x^q$ : the functions only output values from 0 to negative values over the domian \[-1,1\]
+1.  $f(x) = \sum_{q=0}^ {Q_f} \alpha_q x^q$ : the functions only output values from 0 to negative values over the domian \[-1,1\]
 
 2.  $f(x)= \sum_{q=0}^{Q_f} \beta_q L_q(x)$: the functions output both positive and negative y values, however, over the domain \[-1,1\], the output values are only defined (or real) between 0.5 and -0.5. The appears to be a vertical asymtopte over values outside those bounds.
 
@@ -309,7 +310,7 @@ for(sig_i in sigmas){
 
 ```
 
-```{r,lq2_fun_plot,echo=FALSE,eval=TRUE,fig.width=6,fig.height=8}
+```{r,lq2_fun_plot,echo=FALSE,eval=TRUE,fig.width=5,fig.height=6}
 set.seed(2023)
 f_x=function(x,sig=0){
   epsi=rnorm(1,0,sig)
