@@ -209,9 +209,9 @@ legend("topleft",
 
 Observations:
 
-1.  For $f(x) = \sum_{q=0}^ {Q_f} \alpha_q x^q$ the functions, looks to only ouput negative values over the domian \[-1,1\]
+1.   $f(x) = \sum_{q=0}^ {Q_f} \alpha_q x^q$ : the functions only output values from 0 to negative values over the domian \[-1,1\]
 
-2.  $f(x)= \sum_{q=0}^{Q_f} \beta_q L_q(x)$ outputs both positive and negative values \*comeback
+2.  $f(x)= \sum_{q=0}^{Q_f} \beta_q L_q(x)$: the functions output both positive and negative y values, however, over the domain \[-1,1\], the output values are only defined (or real) between 0.5 and -0.5. The appears to be a vertical asymtopte over values outside those bounds.
 
 {{< pagebreak >}}
 
@@ -309,7 +309,7 @@ for(sig_i in sigmas){
 
 ```
 
-```{r,lq2_fun_plot,echo=FALSE,eval=TRUE,fig.height=8}
+```{r,lq2_fun_plot,echo=FALSE,eval=TRUE,fig.width=6,fig.height=8}
 set.seed(2023)
 f_x=function(x,sig=0){
   epsi=rnorm(1,0,sig)
@@ -375,9 +375,9 @@ for(i in seq_along(n_sim)){
 
 ```
 
-#### b) A priori expectation
+#### b) A Priori expectation
 
-Given that the underlying data generating process is non-linear, the non-linear hypothesis would be more suited to fit the data's non-linear behavior and overall shape.
+Given that the underlying data generating process is non-linear, the non-linear hypothesis would be more suited to fit the data's non-linear behavior and overall shape. This visually seems to be the case as well: the H2(x) hypothesis functions follows the shape of the data quite closely.
 
 #### c) Bias Variance for H1 and H2
 
@@ -468,14 +468,13 @@ kable(comaprison_table, col.names = c('Bias','Variance','Both:Bias+Var','OOS Err
 
 ```
 
-```{r,bv_plots,echo=F}
-
+```{r,bv_plots,echo=F,fig.height=6,fig.width=7}
 #| label: fig-subplots
-#| fig-cap: "f(x) two ways"
+#| fig-cap: "OOS Error Estimates"
 #| fig-subcap: 
-#|   - "Bias vs Noise (sigma)"
-#|   - "Variance vs Noise (sigma)"
-#|   - "E[OOS Error] vs Noise (sigma)"
+#|   - "Bias vs Noise"
+#|   - "Variance vs Noise"
+#|   - "E[OOS Error] vs Noise"
 #| layout-ncol: 3
 
 
@@ -498,6 +497,20 @@ points(sigmas,unlist(h1_sigma_function_values[1,]),col='blue',pch = 1)
 lines(sigmas,unlist(h2_sigma_function_values[1,]),col='red',lwd=1.5)
 points(sigmas,unlist(h2_sigma_function_values[1,]),col='red',pch = 1)
 
+
+h1_oos_bias_mean=round(mean(unlist(h1_sigma_function_values[1,])),4)
+h2_oos_bias_mean=round(mean(unlist(h2_sigma_function_values[1,])),4)
+
+
+text3=paste('h1(x) Avg Bias:',h1_oos_bias_mean)
+text4=paste('h2(x) Avg Bias:',h2_oos_bias_mean)
+
+plot_text=paste(text3,text4,sep = "\n")
+
+text(x =0.08, y = 0.04, labels =plot_text ,
+     srt = 0, adj = c(0.5, -0.5), col = "blue",cex=1)
+
+
 legend("bottomright", 
        legend = c("h1(x)", "h2(x)"), # Text labels
        col = c('blue','red'),                           
@@ -513,6 +526,22 @@ points(sigmas,unlist(h1_sigma_function_values[2,]),col='blue',pch = 1)
 lines(sigmas,unlist(h2_sigma_function_values[2,]),col='red',lwd=1.5)
 points(sigmas,unlist(h2_sigma_function_values[2,]),col='red',pch = 1)
 
+
+
+h1_oos_variance_mean=round(mean(unlist(h1_sigma_function_values[2,])),2)
+h2_oos_variance_mean=round(mean(unlist(h2_sigma_function_values[2,])),2)
+
+
+text3=paste('h1(x) Avg Var:',h1_oos_variance_mean)
+text4=paste('h2(x) Avg Var:',h2_oos_variance_mean)
+
+plot_text=paste(text3,text4,sep = "\n")
+
+text(x =0.08, y = 0.04, labels =plot_text ,
+     srt = 0, adj = c(0.5, -0.5), col = "blue",cex=1)
+
+
+
 legend("bottomright", 
        legend = c("h1(x)", "h2(x)"), # Text labels
        col = c('blue','red'),                           
@@ -522,7 +551,7 @@ legend("bottomright",
        bty='n')  
 
 
-plot(NULL,xlim=c(0,0.5),ylim=c(0.07,0.22),xlab='sigma',ylab='E[E_OOS_Err]',main=' Model Expected OOS Error vs Noise Parameter (sigma)',)
+plot(NULL,xlim=c(0,0.5),ylim=c(0.07,0.20),xlab='sigma',ylab='E[E_OOS_Err]',main=' Model Expected OOS Error vs Noise Parameter (sigma)',)
 lines(sigmas,unlist(h1_sigma_function_values[4,]),col='blue',lwd=1.5)
 points(sigmas,unlist(h1_sigma_function_values[4,]),col='blue',pch = 1)
 lines(sigmas,unlist(h2_sigma_function_values[4,]),col='red',lwd=1.5)
@@ -536,21 +565,22 @@ legend("topright",
        title = "Hypothesis",
        bty='n')  
 
-h1_oos_estimate_mean=0.0847
-h2_oos_estimate_mean=0.1341
-h1_bv=0.0903
-h2_bv=0.0706
 
 
-# text1=paste('h1(x) Bias+Variance:',h1_bv)
-# text2=paste('h2(x) Bias+Variance:',h2_bv)
-# text3=paste('h1(x) OOS Error Est:',h1_oos_estimate_mean)
-# text4=paste('h2(x) OOS Error Est:',h2_oos_estimate_mean)
 
-# plot_text=paste(text1,text2,text3,text4,sep = "\n")
-# 
-# text(x =0.08, y = 0.15, labels =plot_text , 
-#      srt = 0, adj = c(0.5, -0.5), col = "blue",cex=0.75)
+h1_oos_estimate_mean=round(mean(unlist(h1_sigma_function_values[4,])),2)
+h2_oos_estimate_mean=round(mean(unlist(h2_sigma_function_values[4,])),2)
+
+
+
+
+text3=paste('h1(x) OOS Error Est:',h1_oos_estimate_mean)
+text4=paste('h2(x) OOS Error Est:',h2_oos_estimate_mean)
+
+plot_text=paste(text3,text4,sep = "\n")
+
+text(x =0.08, y = 0.15, labels =plot_text ,
+     srt = 0, adj = c(0.5, -0.5), col = "blue",cex=1)
 
 ```
 
@@ -562,15 +592,15 @@ h2_bv=0.0706
 
 -   RHS:
 
-    -   The linear model , $h1(x)$, has better out-of-sample performance (lower averge OOS error) overall averaged across 1000 simulations over varying values of the noise parameter compared to the more complex model, $h2(x)$.
+    -   The linear model , $h1(x)$, has better out-of-sample performance overall averaged across 1000 simulations over varying values of the noise parameter compared to the more complex model, $h2(x)$.
 
-    -   
+    -   The combined
 
 -   LHS:
 
-    -   This is also accompanied by a lower average variance across the various noise parameters, this is expected given the that the model is simple relative to $h2(x)$
+    -   The linear model also has lower average variance but higher bias across the various noise parameters, this is expected given the that the model is less complex relative to $h2(x)$
 
-    -   Given the estimated OOS Error, go with the linear model as it is more parsimonious
+    -   Given the estimated OOS Error, go with the linear model as it is more parsimonious and less likely to overfit the data
 
 {{< pagebreak >}}
 
@@ -774,7 +804,7 @@ set.seed(2022)
 y_input=Y
 X_input=X_feat
 # 
-m   = 25
+m   = 10
 p     = dim(X_input)[2]
 q     = dim(as.matrix(Y))[2]
 
@@ -820,6 +850,8 @@ Plot the above
 
 #| fig-dpi: 300
 
+m
+
 min_val_error=min(val_error)
 
 
@@ -847,11 +879,11 @@ abline(v =log(best_nu), col = "purple", lty = "dashed", lwd = 2)
 
 abline(v =log(next_best_nu), col = "blue", lty = "dashed", lwd = 2)
 
-text(x = log(best_nu)-0.35, y = 8, labels = paste("best nu:",round(best_nu,3), 'Val Error:',"-1.47e-9",sep = "\n"),
+text(x = log(best_nu)-0.35, y = 8, labels = paste("best nu:",round(best_nu,3), 'Val Error:',round(min_val_error,2),sep = "\n"),
      srt = 0, adj = c(0.5, -0.5), col = "purple",cex=0.68)
 
 
-text(x = log(next_best_nu)+0.4, y = 8, labels = paste("next best nu:",round(next_best_nu,3), 'Val Error:',"-6.23e-9",sep = "\n"),
+text(x = log(next_best_nu)+0.4, y = 8, labels = paste("next best nu:",round(next_best_nu,3), 'Val Error:',round(next_min_val_error,2),sep = "\n"),
      srt = 0, adj = c(0.5, -0.5), col = "blue",cex=0.68)
 # 
 # 
@@ -867,6 +899,7 @@ The lowest validation error is generated at $\lambda_{min}=2.356$ with an associ
 ```{r, resp_curve,echo=F,fig.height=5,fig.width=7}
 
 library(colorspace)
+m
 
 # Fit probability color mapping for each class onto the feature space
 
@@ -878,20 +911,20 @@ library(colorspace)
     if(ind_val==1){
       
       # Class 1, high to low prob color mapping
-      pallet=colorRampPalette(c("lightblue", "blue")) 
+      pallet=colorRampPalette(c("lightblue", 'white',"blue")) 
       
     }
     
     if(ind_val==2){
       
       # Class 2
-      pallet=colorRampPalette(c("mistyrose", "red"))
+      pallet=colorRampPalette(c("mistyrose",'white', "red"))
       
     }
    if(ind_val==3){
      
      # Class 3
-      pallet=colorRampPalette(c("mediumpurple1", "purple"))
+      pallet=colorRampPalette(c("mediumpurple1",'white', "purple"))
       
    }
     
@@ -922,7 +955,7 @@ pal3 <- ass_pallet(3)
 
 obj_pen = function(pars)
 {
-  res_model =feedforward_nn(X_input,y_input,theta_rand,m,best_nu,activation_fun_2=soft_max,activation_fun_1=tanh)
+  res_model =feedforward_nn(X_input,y_input,pars,m,best_nu,activation_fun_2=soft_max,activation_fun_1=tanh)
   return(res_model$CE_error_L2) # Reg Obj
 }
 
@@ -999,15 +1032,15 @@ add_colour_bar(pal3, "Class 3")
 
 ```
 
-The model produces three distinct regions over the feature space that correspond to the respective (max) probability assignments of each class:
+The model produces three distinct regions over the feature space that correspond to the respective probability assignments of each class:
 
--   Class 1 labels were completely misclassified by the model, with none of the regions predicted for that class from the model containing any of the actual observations for that label. The model also does a poor job of distinguishing between labels in these regions, with very low assignment probabilities to ths class.
+-   Class 1 labels were mostly misclassified by the model, with the predicted region for that class for the model containing few of the actual observations for that label. The model also quite confident in its predictions for that region with high probabilities assignments of lattice points assigned to the class.
 
--   For observations with values between \[-4,0\] for X1 and between \[-4,-2\], the model mostly predicts Class 2 with relatively high probabilities (close to 1). As the values for X1 increase in the X1 dimension, still bounded in the same x2 interval, predicted class 2 probabilities exhibit much lower values for that class. The prediction region from the model was only able to capture a portion of the actual labels for that class.
+-   For observations with values between \[-4,0\] for X1 and between \[-4,\~0.4\], the model mostly predicts Class 2 with relatively high probabilities (close to 1).
 
--   Class 3 probability region dominates the feature space. The
+-   Class 3 probability predictions region dominates the feature space. The majority of observations with values \> -2.24 along the x2 dimension are predicted as belonging to Class 3, with increased probabilities for this class at higher values of x2.
 
-```{r}
+```{r,include=F}
 
 library(dplyr)
 x=res_fitted$second_layer_comp
@@ -1026,7 +1059,7 @@ which.min(apply(class_2,2,max))
 # get value of max probability
 #unique(max_ind)
 lattice_class_pred=data.frame(cbind(XX,max_ind,max_prob))
-lattice_class_pred %>% filter((max_ind==2) & (max_prob<=0.34)) %>% summary()
+lattice_class_pred %>% filter((max_ind==1)) %>% summary()
 
-class_2[,10211]
+
 ```
