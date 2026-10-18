@@ -1,5 +1,0 @@
-"0",""
-"0","for(i in 1:length(beta_qs)){"
-"0","  beta_i=beta_qs[i]"
-"0","  lines(x,sapply(x,target_beta,beta_q=beta_i,Qf=5),col=q_cols[i],lwd=1.2)"
-"0","}"
