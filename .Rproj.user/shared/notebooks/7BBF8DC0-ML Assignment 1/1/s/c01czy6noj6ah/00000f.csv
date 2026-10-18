@@ -4,7 +4,7 @@
 "0","  summands_store=c()"
 "0","  for(k in 0:q) { # These are the ks we are summing over"
 "0","  "
-"0","   summands_k=(x**q)*(choose(q,k)*choose((q+k-1),q)  )"
+"0","   summands_k=(x**k)*(choose(q,k)*choose(((q+k-1)/2),q)  )"
 "0","   summands_store=c(summands_store,summands_k)"
 "0","  }"
 "0","  "

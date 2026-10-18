@@ -4,14 +4,14 @@ author: ""
 editor: visual
 format:
   pdf:
-    fontsize: 12pt
+    fontsize: 10pt
     monofont: "Courier New"  
     pdf-engine: lualatex
     fig-pos: 'H'
     include-in-header:
       text: |
         \usepackage{listings}
-    
+        \usepackage{pdfpages}
 linestretch: 1.05
 documentclass: article
 include-in-header:
@@ -59,20 +59,27 @@ execute:
 library(dplyr)
 library(tidyverse)
 library(knitr)
+library(ggplot2)
+library(reshape2)
+
+#"C:\Users\Admin\OneDrive\Desktop\UCT_Masters_Coursework\Machine Learning\STA PLAGIARISM DECLARATION_ML_filled.pdf"
 ```
+
+\newpage
+\includepdf[pages=1]{STA PLAGIARISM DECLARATION_ML_filled.pdf}
 
 # Question 1
 
 ### a) Legendre Polynomial Plots
 
-```{r,lq_fun,echo=FALSE,eval=TRUE,fig.width=10, fig.height=6}
+```{r,lq_fun,echo=FALSE,eval=TRUE,fig.width=10, fig.height=6,include=T}
 
 lq=function(x,q){
   coeff=2**q
   summands_store=c()
   for(k in 0:q) { # These are the ks we are summing over
   
-   summands_k=(x**q)*(choose(q,k)*choose((q+k-1),q)  )
+   summands_k=(x**k)*(choose(q,k)*choose(((q+k-1)/2),q)  )
    summands_store=c(summands_store,summands_k)
   }
   
@@ -111,18 +118,19 @@ for(i in 1:length(Qs)){ #c(min(sapply(x,lq,q=5)),max(sapply(x,lq,q=5)))
 mtext("Legendre Polynomials of order q", side = 3, outer = TRUE, cex = 1.5, font = 2)
 
 #ya
+# plots
 
 ```
 
-As the order of the polynomial, q, increases, the more nonlinear/complex the$L_q(x)$ gets, albeit slowly.
+As the order of the polynomial, q, increases, the more nonlinear/complex the $L_q(x)$ becomes:
 
-1.  At q=0, $L_q(x)$ devolves to a straight horizontal line $L_q(x)$ =0 over the domain \[-1,1\].
+1.  At q=0, $L_q(x)$ devolves to a straight horizontal line $L_q(x)$ =1 over the domain \[-1,1\].
 
-2.  At q=1 $L_q(x)$ starts to have some slope attached, a straight line of the form $y=2x$
+2.  At q=1, $L_q(x)$ starts to have some slope attached, a straight line of the form $y=2x$.
 
-3.  At q=2, 4 the non-linear curvature/complexity of $L_q(x)$ starts to become more visible particularly towards the edges of the domain \[-1,1; function approximates a parabola/quadratic function
+3.  At q=2 the non-linear curvature/complexity of $L_q(x)$ starts to become more visible, particularly towards the edges of the domain \[-1,1\]; the function approximates a parabola/quadratic function.
 
-4.  At q=3,5 non-linear curvature/complexity of $L_q(x)$ both take the same shape, albeit with different magnitudes of $L_q(x)$ over the same domain.
+4.  At q=3,4,5, the non-linear, polynomial curvature/complexity of $L_q(x)$ becomes more prominant with the function taking more sinusoidal shape.
 
 #### b) Random Target Functions
 
@@ -167,7 +175,7 @@ target_beta=function(x,beta_q,Qf){
 
 # Plot the above target_alpha
 
-plot(NULL,xlim=c(-1,1),ylim=c(-5,2),xlab='x',ylab='f(x)',main='Equation 2 Random Target Functions')
+plot(NULL,xlim=c(-1,1),ylim=c(-5,5),xlab='x',ylab='f(x)',main='Equation 2 Random Target Functions')
 
 q_cols=c('blue','red','magenta','lightblue','purple','green')
 
@@ -189,7 +197,7 @@ legend("bottomleft",
 # Plot the above target_beta
 
 
-plot(NULL,xlim=c(-1,1),ylim=c(-100,100),xlab='x',ylab='f(x)',main='Equation 3 Random Target Functions')
+plot(NULL,xlim=c(-1,1),ylim=c(-2,2),xlab='x',ylab='f(x)',main='Equation 3 Random Target Functions')
 
 for(i in 1:length(beta_qs)){
   beta_i=beta_qs[i]
@@ -210,13 +218,9 @@ legend("topleft",
 
 Observations:
 
-1.  $f(x) = \sum_{q=0}^ {Q_f} \alpha_q x^q$ : the functions only output values from 0 to negative values over the domain \[-1,1\]
+1.  $f(x) = \sum_{q=0}^ {Q_f} \alpha_q x^q$ : the functions only output values from 0 to negative values over the domain \[-1,1\], although the lines are smoother with very little curvature in between.
 
-2.  $f(x)= \sum_{q=0}^{Q_f} \beta_q L_q(x)$: the functions output both positive and negative y values, however, over the domain \[-1,1\], the output values are only defined (or real) between 0.5 and -0.5. The appears to be a vertical asymptotic behaviour outside those bounds.
-
-3.  The two functions appear to either be reflections/inverses of ecah other (look into this)\*
-
-{{< pagebreak >}}
+2.  $f(x)= \sum_{q=0}^{Q_f} \beta_q L_q(x)$: the functions also output 0 to negative values over the domain; however, over the domain \[-1,1\], however, for certain values of $\beta$ there are curvatures, with the function taking a wave-like shape.
 
 {{< pagebreak >}}
 
@@ -262,7 +266,7 @@ for(i in seq_along(n_sim)){
   lines(h1_predict~xi,lwd=2,col=colours[3])
   points(h1_predict~xi,lwd=2,col=colours[3],pch=1)
   # 
-  h2=lm(y~sin(pi*xi)+cos(pi*xi))
+  h2=lm(y~sin(pi*xi)+cos(pi*xi)-1) # no coeff regression
   h2_predict=unname(predict(h2,data.frame(xi)))
   lines(h2_predict~xi,lwd=1,col=colours[4])
   points(h2_predict~xi,lwd=1,col=colours[4],pch=1)
@@ -284,7 +288,7 @@ for(i in seq_along(n_sim)){
 
 #### b) A Priori expectation
 
-Given that the underlying data generating process is non-linear, the non-linear hypothesis would be more suited to fit the data's non-linear behavior and overall shape. This visually seems to be the case as well: the H2(x) hypothesis functions follows the shape of the data quite closely. The linear function only fits a straight line through the data with only a few values intersecting with the underlying function.
+Given that the underlying data generating process is non-linear, the non-linear hypothesis would be more suited to fit the data's non-linear behavior and overall shape. This visually seems to be the case as well: the H2(x) hypothesis functions follows the shape of the data quite closely. The linear function only fits a straight line through the data with only a few values intersecting with the underlying function output values.
 
 #### c) Bias Variance for H1 and H2
 
@@ -331,8 +335,11 @@ oos_estimate=function(f_true,hyp,sig,N, nsim=1000){
        # create OOS datapoint
        xi_oos=sort(runif(N,-2,2)) # draw at random again
        y_oos=sapply(xi_oos,f_x)
-       h_predict_oos=unname(predict(hyp,data.frame(xi_oos)))
        
+       xi_oos_df=data.frame(xi=xi_oos)
+       
+       h_predict_oos=unname(predict(hyp,data=xi_oos_df))
+    
        # calculate the error SE^2
        oos_err_i=(h_predict_oos-y_oos)**2
        oos_err_store=c(oos_err_store,oos_err_i)
@@ -375,14 +382,16 @@ kable(comaprison_table, col.names = c('Bias','Variance','Both:Bias+Var','OOS Err
 
 ```
 
-```{r,bv_plots,echo=F,fig.height=6,fig.width=7}
+**d)** **Bias Variance Dynamics**
+
+```{r,bv_plots,echo=F,fig.width=7}
 #| label: fig-subplots
 #| fig-cap: "OOS Error Estimates"
 #| fig-subcap: 
 #|   - "Bias vs Noise"
 #|   - "Variance vs Noise"
 #|   - "E[OOS Error] vs Noise"
-#| layout-ncol: 3
+#| layout-nrow: 3
 
 
 set.seed(321)
@@ -491,7 +500,7 @@ text(x =0.099, y = 0.105, labels =plot_text ,
 
 ```
 
-#### e) Interpretation 
+#### e) Interpretation
 
 **Bias-Variance Dynamics**
 
@@ -503,23 +512,21 @@ $$E[Err_{oos}]=Bias^2+Variance+ Irreducible Noise (\varepsilon  )$$
 
     -   The linear model, $h1(x)$, has better out-of-sample performance overall, averaged across 1000 simulations over varying values of the noise parameter, compared to the more complex model, $h2(x)$.
 
-    -   There is a small change in the average OOS error for both hypothesis functions. The steepest increase in the average OOS error is observed in the change of the noise parameter from 0.1 to 0.2 and levels thereafter.
-
-    -   A bit more variability is observed in the average out-of-sample error as sigma increases. The error sees a slight decrease as sigma increases up to 0.2, but mostly increases thereafter.
+    -   There are relatively small changes in the average OOS error for both hypothesis functions. The steepest increase in the average OOS error is observed in the change of the noise parameter from 0.1 to 0.2 and levels thereafter for $h1(x)$ and mostly increases for $h2(x)$ as the noise parameter increases from 0.2.
 
 -   LHS:
 
     -   There is very little variability/ change observed in the variance as the noise parameter increases for both functions, whilst the bias for $h1(x)$, sees a small decrease when the noise level increases from 0.3 to 0.4.
 
-    -    Overall, the linear model, $h1(x)$, has lower average variance but higher bias across the various noise parameters; this is expected given the that the model is less complex relative to $h2(x)$
+    -   Overall, the linear model, $h1(x)$, has lower average variance but higher bias across the various noise parameters; this is expected given the that the model is less complex relative to $h2(x)$.
 
     **Model Choice**
 
--   Given the estimated OOS Error, it's better to go with the linear model as it is more parsimonious and less likely to overfit the data
+-   Given the estimated OOS Error, it's better to go with the linear model as it is more parsimonious and more likely to be able to generalize to new data as observed across the above simulations.
 
 -   Rational: the combined estimate comparison $bias^{2} +Var$ to $E[Err_{oos}]$ across sigmas :
 
-    -    $h1(x)$: its average RHS, 0.899 is closer to its LHS OOS estimate, 0.0854 providing a better estimate of the model's general OOS behavior than $h2=(x)$; its average RHS, 0.0701, has a much larger deviation from its average LHS, 0.1323.
+    -   $h1(x)$: its average RHS, 0.0904, is closer to its LHS OOS estimate, 0.0854, providing a better estimate of the model's general OOS behavior compared to $h2=(x)$; its average RHS, 0.0708 has a much larger deviation from its average LHS estimate, 0.1323.
 
 ```{r,include=F,eval=T,echo=F}
 
@@ -534,9 +541,9 @@ h1_both;h2_both
 
 #### a) Data Set Plot
 
-```{r,include=F,echo=F}
+```{r,echo=F,eval=T}
 dat = read.table('Collider_Data_2022.txt', h = TRUE,stringsAsFactors =T) 
-dim(dat)
+
 ```
 
 ```{r,coll_plot,echo=F, fig.height=6,fig.width=6}
@@ -565,7 +572,7 @@ legend(x='topleft',
 
 soft_max = function(z) {  # assume z is a matrix
 
-  z_shifted = sweep(z, 2, apply(z, 2, max), FUN = "-") # subtract maximum from each column
+  z_shifted = sweep(z, 2, apply(z, 2, max), FUN = "-") # subtract maximum from each column to avoid default R behaviour when adding numbers of varying magnitudes
 
  
   num = exp(z_shifted)
@@ -686,7 +693,7 @@ return(list(first_layer_comp = first_layer_comp,second_layer_comp = second_layer
 
 ```
 
-**Numerical Pitfalls:** The computation of log(yhat) in the objective function may cause the network to explode/ diverge given the undefined behavior of the log function at 0 (or values very close to 0), which can hamper the numerical stability of the network's computations.
+**Numerical Pitfalls:** The computation of $log(\hat{y})$ in the objective function may cause the network to explode/ diverge given the undefined behavior of the log function at 0 (or values very close to 0), which can hamper the numerical stability of the network's computations.
 
 ```{r,code_check,echo=F,include=F}
 
@@ -749,7 +756,7 @@ obj_pen = function(pars)
 }
 
 n_nus = 15
-nu_seq= exp(seq(-2,2,length = n_nus))
+nu_seq= exp(seq(-2,2,length = n_nus)) # sequence of nus to validate against
 val_error = rep(0,n_nus)
 for(i in 1:n_nus)
 {
@@ -766,7 +773,6 @@ for(i in 1:n_nus)
   #print(paste0('Validation run:',i,' nu = ', nu))
 }
 
-m
 ```
 
 Plot the validation error vs log ($\lambda$)
@@ -816,9 +822,11 @@ text(x = log(next_best_nu)+0.55, y = 30, labels = paste("next best nu:",round(ne
 
 Model Parameters: number of hidden layer nodes, **m =10**
 
-The lowest validation error is generated at $\lambda_{min}=0.135$ with an associated validation error of 11.04, making for a less strict and more complex model (given the big budget that the sum of the model's parameters cannot exceed). The next best error to the right of this minimum is obtained at $\lambda_{1SE}=0.24 (Val_{ err}=18.7)$, offering stricter control over the complexity of the network and thus more parsimonious model, decreasing the likelihood of the model over fitting to just the training data.
+The lowest validation error is generated at $\lambda_{min}=0.135$ with an associated validation error of 11.04, making for a less strict and more complex model (given the big budget that the sum of the model's parameters cannot exceed). The next best error to the right of this minimum is obtained at $\lambda_{1SE}=0.24 (Val_{ err}=18.7)$, offering stricter control over the complexity of the network and thus more parsimonious model, decreasing the likelihood of the model over fitting to just the training data. **This is the better choice of regularization parameter.**
 
 #### d) Response Curve
+
+Model Parameters: **m=10, nu=0.24**
 
 ```{r, resp_curve,eval=T,echo=F,fig.height=5,fig.width=7}
 
@@ -957,13 +965,13 @@ add_colour_bar(pal3, "Class 3")
 
 ```
 
-The model produces three distinct, rather jagged regions over the feature space that map to the respective probability assignments of each class:
+The model produces three distinct, somewhat jagged regions over the feature space, each corresponding to the probability assignments for one class:
 
--   Class 1 labels were mostly misclassified by the model, with the predicted region for that class for the model containing few of the actual observations for that label. The model is also quite confident in its predictions for that region, with high probability assignments of lattice points assigned to the class. It is most likely that the model would misclassify most new points that actually belong to that class to Class 2.
+-   Class 1: Roughly over half of the Class 1 observations are misclassified. The upper-right region captures only some of them, while a cluster near the bottom (X1 between about -2 and 3, X2 between about -3 and -1.5) falls within the Class 2 region. The model is very confident within its Class 1 region, assigning probabilities close to 1, so new observations resembling that bottom cluster would likely be misclassified as Class 2.
 
--   The feature space is dominated by Class 2 predictions over the lattice points. For observations with values between \[-4, \~1.6\] for X2 and between \[-4,.4\], the model mostly predicts Class 2 with relatively high probabilities (close to 1). However, we still see a small fraction of actual observations belonging to this class (for observations that have values \> 2 in the X2 dimension), that lie in the Class 3 color mapping over the feature space.
+-   Class 2: Class 2 predictions dominate the feature space. The region lies below a boundary that slopes from X2 \~ 1.4 at (X1 = -5) down to \~ -1.2 (at X1 = 5), and the model predicts Class 2 there with probabilities close to 1. However, a significant portion of Class 2 observations (X1 between about -3 and 1, X2 between about 1.5 and 3) falls within the Class 3 region.
 
--   Class 3 prediction mapping ranges between \[\>-4,0\] in the X1 dimension and \>\~1.6 in the X2 dimension across the lattice space. The majority of misclassified points in this class (out side the aforementioned bounds), are predicted to be in Class 2 ( which would likely happen for new observations as well) . Once again, the probabilities for assignment to Class 3 are relatively high as well.
+-   Class 3: The Class 3 region extends from the left edge (X1 = -5) to a diagonal boundary running from about X1 = -1 at the top to about X1 = 1 near X2 = 0.5, and it narrows toward the top. Roughly half of the Class 3 observations lie outside this region, mostly in the Class 2 region, and new observations would likely behave similarly. Probabilities within the region are again high.
 
 ```{r,include=F}
 
@@ -989,24 +997,24 @@ lattice_class_pred %>% filter((max_ind==1)) %>% summary()
 
 ```
 
-# Question 2 Optional Questions
+```{r,lq2_fun_sim,echo=FALSE,eval=T,include=F, fig.width=8,fig.height=6}
 
-#### a) Hypothesis Function Simulations
+# Optional Qs
 
-```{r,lq2_fun_sim,echo=FALSE,include=F,eval=T}
-
+set.seed(1)
 q=10
 Ns=seq(20,110,10)
 
 
 sigmas=seq(0.2,1.1,0.1)
 
-lq=function(x,q=10){ # q is the order
+
+lq=function(x,q){
   coeff=2**q
   summands_store=c()
   for(k in 0:q) { # These are the ks we are summing over
   
-   summands_k=(x**q)*(choose(q,k)*choose((q+k-1),q)  )
+   summands_k=(x**k)*(choose(q,k)*choose(((q+k-1)/2),q)  )
    summands_store=c(summands_store,summands_k)
   }
   
@@ -1041,7 +1049,7 @@ for(sim in 1:n_sim){
   error_diffs=matrix(NA,nrow=length(sigmas),ncol=length(Ns),dimnames = list(sigmas,Ns))
 for(sig_i in sigmas){
   for(n in Ns) {
-  set.seed(1)
+  
   beta_q=runif(1,-1,1)
   Qf=10
   x_sim=runif(n,-1,1)
@@ -1050,17 +1058,22 @@ for(sig_i in sigmas){
   # apply target
   yi_sig_n=sapply(x_sim,target_beta,beta_q=beta_q,Qf=10,sig=sig_i)
   
+  data_train=data.frame(x_sim)
+  data_train$y_sig_n=yi_sig_n
+  
   # fit h2 and h10
   
-  h2=lm(yi_sig_n~poly(x_sim,2,raw=T))
-  h10=lm(yi_sig_n~poly(x_sim,10,raw=T))
+  h2=lm(yi_sig_n~poly(x_sim,2,raw=T), data=data_train)
+  h10=lm(yi_sig_n~poly(x_sim,10,raw=T), data=data_train)
   
   
   # get oos predictions from above
-  x_sim_oos= runif(n,-1,1)
+  x_sim_oos=runif(n,-1,1)
   yi_oos=sapply(x_sim_oos,target_beta,beta_q=beta_q,Qf=10,sig=sig_i)
-  h2_pred_n_sig=unname(predict(h2,data.frame(x_sim_oos)))
-  h10_pred_n_sig=unname(predict(h10,data.frame(x_sim_oos)))
+  
+  data_test= data.frame(x_sim=x_sim_oos)
+  h2_pred_n_sig=unname(predict(h2,data_test ))
+  h10_pred_n_sig=unname(predict(h10, data_test ))
   
   # Get the errors
   # Using MSE
@@ -1070,7 +1083,7 @@ for(sig_i in sigmas){
   # get diff 1,2,3
   i=which(Ns==n)
   j=which(sigmas==sig_i)
-  error_diffs[i,j]=(h2_oos_err-h10_oos_err)
+  error_diffs[j,i]=(h2_oos_err-h10_oos_err)
   ##
 
    
@@ -1082,6 +1095,162 @@ for(sig_i in sigmas){
   all_errors_list[[sim]]=error_diffs
 }
 
-all_errors_list[[1]]
-##ggg
+
+# Get average across n simulations
+
+avg_across_sim= Reduce(`+`, all_errors_list) / length(all_errors_list)
+
+
+
+# Plot the above
+# Heat map over the average values from the various combinations of N and sigma
+
+
+
+
+overfit=avg_across_sim
+sigma_vals  =rownames(avg_across_sim)    
+sample_sizes=colnames(avg_across_sim)     
+df <- melt(overfit, varnames = c("sigma", "n"), value.name = "overfit")
+df$sigma <- factor(df$sigma)         
+df$n     <- factor(df$n)
+
+ggplot(df, aes(n, sigma, fill = overfit)) +
+  geom_tile(color = "white") +
+  #geom_text(aes(label = round(overfit, 2)), size = 3) +
+  scale_fill_viridis_c(option = "viridis", direction = -1) +
+  labs(x = "Sample size", y = paste('sigma'),
+       fill = "Overfit\nestimate",
+       title = "Overfit estimate by sample size and noise level") +
+  theme_minimal() +
+  coord_fixed()
+
+```
+
+```{r,lq2_fun_sim_b,echo=FALSE,eval=T,include=F, fig.width=8,fig.height=6}
+
+set.seed(1)
+q=10
+Ns=seq(20,110,10)
+
+
+sigmas=seq(0.2,1.1,0.1)
+
+
+lq=function(x,q){
+  coeff=2**q
+  summands_store=c()
+  for(k in 0:q) { # These are the ks we are summing over
+  
+   summands_k=(x**k)*(choose(q,k)*choose(((q+k-1)/2),q)  )
+   summands_store=c(summands_store,summands_k)
+  }
+  
+  f_x=coeff*sum(summands_store)
+  
+  return(f_x)
+  
+}
+
+
+target_beta=function(x,beta_q,Qf,sig){
+  epsi=rnorm(1,0,sig)
+  store_q=c()
+  for(q_i in 0:Qf){
+    Lq=lq(x,q_i)
+    store_q=c(store_q,beta_q*Lq)
+  }
+  
+  ret=sum(store_q)+epsi
+  return(ret)
+}
+
+set.seed(1)
+
+
+#Generate a list of N datasets
+
+n_sim=10
+
+all_errors_list=list()
+for(sim in 1:n_sim){
+  error_diffs=matrix(NA,nrow=length(sigmas),ncol=length(Ns),dimnames = list(sigmas,Ns))
+for(sig_i in sigmas){
+  for(n in Ns) {
+  
+  beta_q=runif(1,-1,1)
+  Qf=10
+  x_sim=runif(n,-1,1)
+  
+  
+  # apply target
+  yi_sig_n=sapply(x_sim,target_beta,beta_q=beta_q,Qf=10,sig=sig_i)
+  
+  data_train=data.frame(x_sim)
+  data_train$y_sig_n=yi_sig_n
+  
+  # fit h2 and h10
+  
+  h2=lm(yi_sig_n~poly(x_sim,2,raw=T), data=data_train)
+  h10=lm(yi_sig_n~poly(x_sim,10,raw=T), data=data_train)
+  
+  
+  # get oos predictions from above
+  x_sim_oos=runif(n,-1,1)
+  yi_oos=sapply(x_sim_oos,target_beta,beta_q=beta_q,Qf=10,sig=sig_i)
+  
+  data_test= data.frame(x_sim=x_sim_oos)
+  h2_pred_n_sig=unname(predict(h2,data_test ))
+  h10_pred_n_sig=unname(predict(h10, data_test ))
+  
+  # Get the errors
+  # Using MSE
+  h2_oos_err=mean((yi_oos-h2_pred_n_sig)**2)
+  h10_oos_err=mean((yi_oos-h10_pred_n_sig)**2)
+  
+  # get diff 1,2,3
+  i=which(Ns==n)
+  j=which(sigmas==sig_i)
+  error_diffs[j,i]=(h2_oos_err-h10_oos_err)
+  ##
+
+   
+  }
+
+  # checking
+}
+  #concat all the matrices from n simulations of each N,sig combination
+  all_errors_list[[sim]]=error_diffs
+}
+
+
+# Get average across n simulations
+
+avg_across_sim= Reduce(`+`, all_errors_list) / length(all_errors_list)
+
+
+
+# Plot the above
+# Heat map over the average values from the various combinations of N and sigma
+
+
+
+
+overfit=avg_across_sim
+sigma_vals  =rownames(avg_across_sim)    
+sample_sizes=colnames(avg_across_sim)     
+df <- melt(overfit, varnames = c("sigma", "n"), value.name = "overfit")
+df$sigma <- factor(df$sigma)         
+df$n     <- factor(df$n)
+
+ggplot(df, aes(n, sigma, fill = overfit)) +
+  geom_tile(color = "white") +
+  #geom_text(aes(label = round(overfit, 2)), size = 3) +
+  scale_fill_viridis_c(option = "viridis", direction = -1) +
+  labs(x = "Sample size", y = paste('sigma'),
+       fill = "Overfit\nestimate",
+       title = "Overfit estimate by sample size and noise level") +
+  theme_minimal() +
+  coord_fixed()
+
 ```

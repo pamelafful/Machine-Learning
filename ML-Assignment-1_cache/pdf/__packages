@@ -10,3 +10,4 @@ forcats
 lubridate
 knitr
 colorspace
+reshape2
