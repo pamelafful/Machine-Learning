@@ -584,7 +584,7 @@ soft_max = function(z) {  # assume z is a matrix
 
 #### c) Feed Forward Neural Network
 
-```{r,nn_code,echo=F}
+```{r,nn_code,echo=F,eval=T}
 
 #rm(list = ls())
 
@@ -723,13 +723,13 @@ return(list(first_layer_comp = first_layer_comp,second_layer_comp = second_layer
 
 #### d) Validation Analysis
 
-```{r,val_co,echo=F,include=F}
+```{r,val_co,echo=F,eval=T}
 set.seed(2022)
 
 y_input=Y
 X_input=X_feat
 # 
-m   = 10
+m   = 10 # number nodes in hidden layer
 p     = dim(X_input)[2]
 q     = dim(as.matrix(Y))[2]
 
@@ -766,12 +766,12 @@ for(i in 1:n_nus)
   #print(paste0('Validation run:',i,' nu = ', nu))
 }
 
-
+m
 ```
 
 Plot the validation error vs log ($\lambda$)
 
-```{r, val_plot, echo=F, fig.height=5,fig.width=7}
+```{r, val_plot,eval=T, echo=F, fig.height=5,fig.width=7}
 
 #| fig-dpi: 300
 
@@ -820,11 +820,12 @@ The lowest validation error is generated at $\lambda_{min}=0.135$ with an associ
 
 #### d) Response Curve
 
-```{r, resp_curve,echo=F,fig.height=5,fig.width=7}
+```{r, resp_curve,eval=T,echo=F,fig.height=5,fig.width=7}
 
 library(colorspace)
 
 # Fit probability color mapping for each class onto the feature space
+
 
 
 # Helper functions
@@ -956,7 +957,7 @@ add_colour_bar(pal3, "Class 3")
 
 ```
 
-The model produces three distinct and rather jagged regions over the feature space that correspond to the respective probability assignments of each class:
+The model produces three distinct, rather jagged regions over the feature space that map to the respective probability assignments of each class:
 
 -   Class 1 labels were mostly misclassified by the model, with the predicted region for that class for the model containing few of the actual observations for that label. The model is also quite confident in its predictions for that region, with high probability assignments of lattice points assigned to the class. It is most likely that the model would misclassify most new points that actually belong to that class to Class 2.
 
