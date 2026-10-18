@@ -302,10 +302,11 @@ for(sig_i in sigmas){
   h2_oos_err=mean((yi_oos-h2_pred_n_sig)**2)
   h10_oos_err=mean((yi_oos-h10_pred_n_sig)**2)
   
-  # get diff
+  # get diff 1,2,3
   i=which(Ns==n)
   j=which(sigmas==sig_i)
   error_diffs[i,j]=(h2_oos_err-h10_oos_err)
+  ##
 
    
   }

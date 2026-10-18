@@ -306,6 +306,7 @@ for(sig_i in sigmas){
   i=which(Ns==n)
   j=which(sigmas==sig_i)
   error_diffs[i,j]=(h2_oos_err-h10_oos_err)
+  ##
 
    
   }
