@@ -5,6 +5,7 @@ editor: visual
 format:
   pdf:
     fontsize: 10pt
+    code-block-wrapping: true
     monofont: "Courier New"  
     pdf-engine: lualatex
     fig-pos: 'H'
@@ -12,6 +13,11 @@ format:
       text: |
         \usepackage{listings}
         \usepackage{pdfpages}
+
+header-includes:
+  - \usepackage{fvextra}
+  - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+
 linestretch: 1.05
 documentclass: article
 include-in-header:
@@ -528,7 +534,7 @@ $$E[Err_{oos}]=Bias^2+Variance+ Irreducible Noise (\varepsilon  )$$
 
     -   $h1(x)$: its average RHS, 0.0904, is closer to its LHS OOS estimate, 0.0854, providing a better estimate of the model's general OOS behavior compared to $h2=(x)$; its average RHS, 0.0708 has a much larger deviation from its average LHS estimate, 0.1323.
 
-```{r,include=F,eval=T,echo=F}
+```{r,LHS_com,include=F,eval=T,echo=F}
 
 h1_both=h1_oos_variance_mean+h1_oos_bias_mean
 h2_both=h2_oos_variance_mean+h2_oos_bias_mean
@@ -541,7 +547,7 @@ h1_both;h2_both
 
 #### a) Data Set Plot
 
-```{r,echo=F,eval=T}
+```{r,data_read_in,echo=F,eval=T}
 dat = read.table('Collider_Data_2022.txt', h = TRUE,stringsAsFactors =T) 
 
 ```
@@ -1252,5 +1258,25 @@ ggplot(df, aes(n, sigma, fill = overfit)) +
        title = "Overfit estimate by sample size and noise level") +
   theme_minimal() +
   coord_fixed()
+```
+
+# Appendix {.appendix}
+
+**Question 1 code**
+
+```{r,ref.label=c('lq_fun','lq_fun_','rt_fun'), eval=FALSE, echo=TRUE}
+
+```
+
+**Question 3 code**
+
+```{r,ref.label=c('lq2_fun_plot','bv_tab','bv_plots'), eval=FALSE, echo=TRUE}
+
+```
+
+**Question 4 code**
+
+```{r,ref.label=c('data_read_in','coll_plot','soft_max','nn_code','val_co','val_plot','resp_curve'), eval=FALSE, echo=TRUE}
+
 
 ```
