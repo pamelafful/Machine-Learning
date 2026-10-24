@@ -4,7 +4,7 @@ author: ""
 editor: visual
 format:
   pdf:
-    fontsize: 10pt
+    fontsize: 12pt
     code-block-wrapping: true
     monofont: "Courier New"  
     pdf-engine: lualatex
@@ -238,7 +238,7 @@ Observations:
 
 1.  $f(x) = \sum_{q=0}^ {Q_f} \alpha_q x^q$ : the function is smoother over the domain \[-1,1\], with very little curvature in between.
 
-2.  $f(x)= \sum_{q=0}^{Q_f} \beta_q L_q(x)$: there are curvatures over the same domain, with the function taking a wave-like shape.
+2.  $f(x)= \sum_{q=0}^{Q_f} \beta_q L_q(x)$: there are curvatures over the same domain, with the function taking a wave-like shape courtesy of the $L_{q}(x)$ function.
 
 {{< pagebreak >}}
 
@@ -389,13 +389,7 @@ kable(comparison_table, digits = 4,
 **d)** **Bias Variance Dynamics**
 
 ```{r,bv_plots,echo=F,fig.width=7}
-#| label: fig-subplots
-#| fig-cap: "OOS Error Estimates"
-#| fig-subcap: 
-#|   - "Bias vs Noise"
-#|   - "Variance vs Noise"
-#|   - "E[OOS Error] vs Noise"
-#| layout-nrow: 3
+
 
 
 set.seed(321)
@@ -429,7 +423,7 @@ h1_sigma_function_values=sapply(sigmas,oos_estimate,f_true=f_x,hyp='h1',N=5,nsim
 h2_sigma_function_values=sapply(sigmas,oos_estimate,f_true=f_x,hyp='h2',N=5,nsim=1000)
 
 # create bias plot
-plot(NULL,xlim=c(0,0.5),ylim=c(0,0.2),xlab='sigma',ylab='bias2',main=' Model Bias vs Noise Parameter (sigma)',)
+plot(NULL,xlim=c(0,0.5),ylim=c(0,0.10),xlab='sigma',ylab='bias2',main=' Model Bias vs Noise Parameter (sigma)',)
 lines(sigmas,unlist(h1_sigma_function_values[1,]),col='blue',lwd=1.5)
 points(sigmas,unlist(h1_sigma_function_values[1,]),col='blue',pch = 1)
 lines(sigmas,unlist(h2_sigma_function_values[1,]),col='red',lwd=1.5)
@@ -449,7 +443,7 @@ text(x =0.08, y = 0.04, labels =plot_text ,
      srt = 0, adj = c(0.5, -0.5), col = "blue",cex=1)
 
 
-legend(x=0.4,y=0.15, 
+legend(x=0.4,y=0.05, 
        legend = c("h1(x)", "h2(x)"), # Text labels
        col = c('blue','red'),                           
        pch = 1, 
@@ -457,8 +451,9 @@ legend(x=0.4,y=0.15,
        title = "Hypothesis",
        bty='n')  
 
+# Plot Variance
 
-plot(NULL,xlim=c(0,0.5),ylim=c(0,0.5),xlab='sigma',ylab='Variance',main=' Model Variance vs Noise Parameter (sigma)',)
+plot(NULL,xlim=c(0,0.5),ylim=c(0,0.4),xlab='sigma',ylab='Variance',main=' Model Variance vs Noise Parameter (sigma)',)
 lines(sigmas,unlist(h1_sigma_function_values[2,]),col='blue',lwd=1.5)
 points(sigmas,unlist(h1_sigma_function_values[2,]),col='blue',pch = 1)
 lines(sigmas,unlist(h2_sigma_function_values[2,]),col='red',lwd=1.5)
@@ -475,7 +470,7 @@ text4=paste('h2(x) Avg Var:',h2_oos_variance_mean)
 
 plot_text=paste(text3,text4,sep = "\n")
 
-text(x =0.08, y = 0.04, labels =plot_text ,
+text(x =0.08, y = 0.25, labels =plot_text ,
      srt = 0, adj = c(0.5, -0.5), col = "blue",cex=1)
 
 
@@ -489,13 +484,16 @@ legend(x=0.4,y=0.4,
        bty='n')  
 
 
-plot(NULL,xlim=c(0,0.5),ylim=c(0,2),xlab='sigma',ylab='E[E_OOS_Err]',main=' Model Expected OOS Error vs Noise Parameter (sigma)',)
+
+# Plot OOS
+
+plot(NULL,xlim=c(0,0.5),ylim=c(0,1.5),xlab='sigma',ylab='E[E_OOS_Err]',main=' Model Expected OOS Error vs Noise Parameter (sigma)',)
 lines(sigmas,unlist(h1_sigma_function_values[4,]),col='blue',lwd=1.5)
 points(sigmas,unlist(h1_sigma_function_values[4,]),col='blue',pch = 1)
 lines(sigmas,unlist(h2_sigma_function_values[4,]),col='red',lwd=1.5)
 points(sigmas,unlist(h2_sigma_function_values[4,]),col='red',pch = 1)
 
-legend(x=0.4,y=1.5, 
+legend(x=0.4,y=1.05, 
        legend = c("h1(x)", "h2(x)"), # Text labels
        col = c('blue','red'),                           
        pch = 1, 
@@ -517,7 +515,7 @@ text4=paste('h2(x) Avg OOS Error Est:',h2_oos_estimate_mean)
 
 plot_text=paste(text3,text4,sep = "\n")
 
-text(x =0.099, y = 0.105, labels =plot_text ,
+text(x =0.099, y = 0.55, labels =plot_text ,
      srt = 0, adj = c(0.5, -0.5), col = "blue",cex=1)
 
 ```
@@ -530,29 +528,13 @@ The expected out-of-sample error as it relates to the bias and variance of a mod
 
 $$E[Err_{oos}]=Bias^2+Variance+ Irreducible Noise (\varepsilon  )$$
 
--   LHS:
+-   LHS: The model $h2(x)$ has better out-of-sample performance overall than the linear model $h1(x)$, averaged across 1000 simulations and varying noise parameters (average OOS error of 0.1465 vs 0.3166). It also has the lower error at every value of the noise parameter. The OOS error increases for both hypotheses as the noise parameter increases, with the increase growing faster at higher noise levels. This is expected, since noise adds irreducible error to the OOS observations.
 
-    -   The model $h2(x)$ has better out-of-sample performance overall than the linear model $h1(x)$, averaged across 1000 simulations and varying noise parameters (average OOS error of 0.1465 vs 0.3166). It also has the lower error at every value of the noise parameter.
-
-    -   The OOS error increases for both hypotheses as the noise parameter increases, with the increase growing faster at higher noise levels: roughly 0.16 to 0.6 for $h1(x)$ and 0 to 0.41 for $h2(x)$ over the range of sigma. This is expected, since noise adds irreducible error to the OOS observations and also makes the fits less stable.
-
--   RHS:
-
-    -   The bias² is flat across the noise parameter for both functions (0.0844 for $h1(x)$ and 0.0014 for $h2(x)$), since noise averages out across simulations and does not affect how well the average fit matches the true function.
-
-    -   The variance increases with the noise parameter for both functions, as noisier training data produces more variable fits. $h1(x)$ has the higher average variance (0.1464 vs 0.0522), and it is already non-zero at $\sigma=0$, which comes from fitting a line to only N = 5 randomly drawn points.
-
-    -   Overall, $h2(x)$ has both lower bias and lower variance across the noise parameters. Both models have two parameters, so the difference is not complexity; the form of $h2(x)$ simply matches the target function much better than a straight line.
+-   RHS: The bias² is flat across the noise parameter for both functions (0.0844 for $h1(x)$ and 0.0014 for $h2(x)$), since noise oes not directly affect the level of bias in the model but is affected by the level of the model complexity (or functional form) of the hypothesis function. As expected, the bias is higher for the simpler $h1(x)$ model. The variance increases with the noise parameter for both functions, as noisier training data produces more variable fits. $h1(x)$ has the higher average variance (0.1464 vs 0.0522), offering greater stability of predictions across simulations.
 
     **Model Choice**
 
--   Given the estimated OOS Error, it's better to go with the linear model as it is more parsimonious and more likely to be able to generalize to new data as observed across the above simulations.
-
--   Rational: the combined estimate comparison $bias^{2} +Var$ to $E[Err_{oos}]$ across sigmas
-
-    -   $h1(x)$: its average RHS estimate of about 0.3225 is close to its LHS OOS estimate of 0.3166.
-
-    -   $h2(x)$: its average RHS estimate of about 0.1453 is even closer to its LHS OOS estimate of 0.1465, so the decomposition describes the OOS behavior of $h2(x)$ very well.
+    The form of $h2(x)$ simply matches the target function much better than a straight line. Given the estimated average OOS error, it's better to go with the model as it is still parsimonious (2 parameters) and has greater stability and accuracy on unseen data. Also, controlling for a relatively stable bias, the variance is much more sensitive to noise, which in turn mostly affects the overall error of the model for different levels of noise.
 
 ```{r,LHS_com,include=F,eval=T,echo=F}
 
@@ -602,7 +584,7 @@ soft_max = function(z) {  # assume z is a matrix
  
   num = exp(z_shifted)
 
-  # Sum exponentials within each column
+  # Sum exp within each col
   sums = colSums(num)
 
   # Normalize each column
@@ -636,15 +618,22 @@ feedforward_nn = function(X_input, y_input, theta, m, nu,
   W2 = matrix(theta[(i1 + 1):i2],   nrow = m, ncol = d2)
   b1 = theta[(i2 + 1):i3]
   b2 = theta[(i3 + 1):(i3 + d2)]
+  
+  b1_ones_matrix=matrix(1,nrow=1,ncol=N)
+  b1_mat=b1%*%b1_ones_matrix
+# 
+#   
+#   # bias matrix going  into output/layer 2
+  b2_ones_matrix=matrix(1,nrow=1,ncol=N) # Repeat this N times
+  b2_mat=b2%*%b2_ones_matrix
+
 
   # forward pass
-  first_layer_comp = activation_fun_1(sweep(t(W1) %*% X, 1, b1, "+"))       # m x N
-  second_layer_comp_no_activation = sweep(t(W2) %*% first_layer_comp, 1, b2, "+")  # d2 x N
+  first_layer_comp = activation_fun_1(t(W1) %*% X+  b1_mat)       # m x N
+  second_layer_comp_no_activation = (t(W2) %*% first_layer_comp)+b2_mat # d2 x N
   second_layer_comp = activation_fun_2(second_layer_comp_no_activation)     # d2 x N
 
-  # one-hot predicted labels (d2 x N): max class within each observation
-  y_pred_label = apply(second_layer_comp, 2,
-                       function(pr) as.numeric(seq_along(pr) == which.max(pr)))
+
 
   # cross-entropy: sum over classes and observations, divided by N
   CE_error    = -sum(t(y) * log(pmax(second_layer_comp, 1e-12))) / N
@@ -652,8 +641,6 @@ feedforward_nn = function(X_input, y_input, theta, m, nu,
 
   return(list(first_layer_comp = first_layer_comp,
               second_layer_comp = second_layer_comp,
-              second_layer_comp_no_activation = second_layer_comp_no_activation,
-              y_pred_label = y_pred_label,
               CE_error = CE_error,
               CE_error_L2 = CE_error_L2))
 }
@@ -788,7 +775,7 @@ text(x = log(next_best_nu)+0.5, y = 0.5, labels = paste("next best nu:",round(ne
 
 Model Parameters: number of hidden layer nodes, **m =10**
 
-The lowest validation error is generated at $\lambda_{min}=0.135$ with an associated validation error of 11.04, making for a less strict and more complex model (given the big budget that the sum of the model's parameters cannot exceed). The next best error to the right of this minimum is obtained at $\lambda_{1SE}=0.31 9 (Val_{ err}=0.29)$, offering stricter control over the complexity of the network and thus more parsimonious model without too much of a deterioration on the error, decreasing the likelihood of the model over fitting to just the training data. **This is the better choice of regularization parameter.**
+The lowest validation error is generated at $\lambda_{min}=0.135$ with an associated validation error of 11.04, making for a less strict and more complex model (given the big budget that the sum of the model's parameters cannot exceed). The next best error to the right of this minimum is obtained at $\lambda_{1SE}=0.31 9$, offering stricter control over the complexity of the network and thus more parsimonious model without too much of a deterioration on the validation error, decreasing the likelihood of the model over fitting to just the training data. **This is the better choice of regularization parameter.**
 
 #### d) Response Curve
 
@@ -934,35 +921,11 @@ add_colour_bar(pal3, "Class 3")
 
 The model produces three distinct, somewhat smooth regions over the feature space, each corresponding to the probability assignments for one class:
 
--   Class 1: Most of the Class 1 observations are correctly classified. The Class 1 region covers the right side of the feature space (roughly X1 \> 0 to 1, depending on X2) and curves around the Class 3 region, capturing both the upper-right and lower-right arcs of blue points. The model is very confident within this region, assigning probabilities close to 1. The few misclassified observations lie near the wavy boundary with Class 2, mainly at the top (X1 between about -1 and 0, X2 between about 2 and 3).
+-   Class 1: Most of the Class 1 observations are correctly classified. The Class 1 region covers the right side of the feature space (roughly X1 \> 0 to 1, depending on X2). The model is very confident within this region, assigning probabilities close to 1. The few misclassified observations lie near the boundary with Class 2, mainly at the top (X1 between about -1 and 0, X2 between about 2 and 3). For new observations that lie in that region near the boundary, the model will likely misclassify points as belonging to Class 2 (at worst).
 
--    Class 2: The Class 2 region covers the left side of the feature space (roughly X1 \< -1 to 0, depending on X2) and wraps above and below the Class 3 region. The model predicts Class 2 there with probabilities close to 1. Most Class 2 observations are correctly classified, including the arcs above and below the center. The exceptions are a handful of points near the white transition band at the top (X1 between about 0 and 1, X2 between about 2 and 3) and a few that spill into the Class 3 region.
+-   Class 2: The Class 2 region covers the left side of the feature space (roughly X1 \< -1 to 0, depending on X2) and wraps above and below the Class 3 region. The model predicts Class 2 there with probabilities close to 1. Most Class 2 observations are correctly classified, with a few edge cases at the boundaries with Class1 and Class 3. These exceptions are near the white band at the top (X1 between about 0 and 1, X2 between about 2 and 3) and a few that spill into the Class 3 region.
 
--    Class 3: The Class 3 region is a compact area in the center of the feature space (roughly X1 between -2 and 2, X2 between -1.5 and 1.5). Most Class 3 observations fall within it, with the misclassified ones mostly along its edges, in the Class 2 region on the left and the Class 1 region on the right. Probabilities within the region are high, though somewhat lower than for Class 1 and Class 2, and new observations would likely behave similarly.
-
-```{r,include=F}
-
-library(dplyr)
-x=res_fitted$second_layer_comp
-
-max_ind=apply(x,2,which.max) #get index of max probability
-max_prob=apply(x,2,max) 
-
-class_2=res_fitted$second_layer_comp[,which(max_ind==2)]
-which.min(apply(class_2,2,max))
-# ncol(class_2)
-# length(dat[dat$Yi2==1,]$X1)
-# 
-# 
-# which(max_ind==2)
-
-# get value of max probability
-#unique(max_ind)
-lattice_class_pred=data.frame(cbind(XX,max_ind,max_prob))
-lattice_class_pred %>% filter((max_ind==1)) %>% summary()
-
-
-```
+-   Class 3: The Class 3 region is a compact area in the center of the feature space (roughly X1 between -2 and 2, X2 between -1.5 and 1.5). Most Class 3 observations fall within it, with the misclassified ones mostly along its edges, in the Class 2 region on the left and the Class 1 region on the right. Probabilities within the inner region are high as well; predictions on new observations that fall within these bounds would likely behave similarly.
 
 ```{r,lq2_fun_sim,echo=FALSE,eval=T,include=F, fig.width=8,fig.height=6}
 

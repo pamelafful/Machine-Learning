@@ -1,0 +1,389 @@
+---
+title: ""
+author: ""
+editor: visual
+format:
+  pdf:
+    fontsize: 12pt
+    code-block-wrapping: true
+    monofont: "Courier New"  
+    pdf-engine: lualatex
+    fig-pos: 'H'
+    include-in-header:
+      text: |
+        \usepackage{listings}
+        \usepackage{pdfpages}
+
+header-includes:
+  - \usepackage{fvextra}
+  - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+
+linestretch: 1.05
+documentclass: article
+include-in-header:
+  text: |
+    \usepackage{graphicx}
+
+include-before-body:
+  text: |
+    \begin{titlepage}
+    \centering
+
+    {\Large University of Cape Town\par}
+    \vspace{0.8cm}
+
+    \includegraphics[width=0.35\textwidth]{CopyOfUCTLogo.jpg}
+
+    \vspace{2cm}
+
+    {\Large Machine Learning Assignment 2\par}
+    
+
+    \vspace{1.5cm}
+
+    {\large Pamela Afful\par}
+
+    \vspace{0.5cm}
+
+    {\large Student Number: AFFPAM001\par}
+
+    \vfill
+
+    {\large \today\par}
+
+    \end{titlepage}
+    
+execute: 
+  cache: true
+  warning: false
+  message: false
+  echo: false
+  enabled: true
+---
+
+\newpage
+\includepdf[pages=1]{STA PLAGIARISM DECLARATION_ML_filled.pdf}
+
+```{r,set_up,echo=F,include=F}
+library(dplyr)
+library(tidyverse)
+library(knitr)
+library(ggplot2)
+library(reshape2)
+
+```
+
+# Drone Escape
+
+a\)
+
+```{r,param_set_up,echo=T}
+set.seed(2023)
+
+
+inner_rad=0.25
+outer_rad=1
+
+
+# Initialize/Arrange object st they lie in outer circle/inner circle
+
+J       =   50 # num trees/objects to avoid
+o1      =   runif(J,-outer_rad,outer_rad)  # x-coordinates of objects
+o2      =   runif(J,-outer_rad,outer_rad)  # y-coordinates of objects
+objects =  cbind(o1,o2)
+
+
+
+
+
+# Initialize xt such that it is in the starting position inside the inner circle
+
+xt=matrix(cbind(runif(1,inner_rad**2,2*(inner_rad)**2),runif(1,inner_rad**2,2*(inner_rad)**2)),nrow=1,ncol=2)
+
+delt    =  0.025            # How big are the steps you can take?
+
+rad     =  0.05            # How close to an object before you crash?
+
+
+
+
+game_status=function(xt,objects, rad,center=matrix(c(0,0),nrow=1,ncol=2),outer_rad=1)
+{
+  status    = 0
+  J         = dim(objects)[1] # num objects/rows of tree matrix positions
+  ones      = matrix(1,J,1) # col matrix/vector of ones J
+  dists     = sqrt(rowSums((objects - ones%*%xt)^2)) # dist between xt/dron and tree
+  min_dist  = min(dists) # take min to see if the drone has collided with at least any one of the trees
+  
+  # check outer point distance to determin win
+  outer_circle_point_dist = sqrt(rowSums((center - xt)^2))
+  
+  #escape condition
+  # distance btween drone and outer center >outer radius
+
+  
+  if(outer_circle_point_dist>outer_rad){
+    status=+1
+  }
+  if((min_dist<rad)){
+    status=-1
+  }
+  
+  ret = list(status = status, closest = objects[which.min(dists),,drop =FALSE],min_dist = min_dist)
+  return(ret)
+}
+
+
+game_status(xt,objects, rad,center=matrix(c(0,0),nrow=1,ncol=2),outer_rad=1)
+
+```
+
+b\)
+
+```{r}
+set.seed(2024)
+
+
+# Initialize/Arrange object st they lie in outer circle/inner circle
+
+J       =   50 # num trees/objects to avoid
+o1      =   runif(J,outer_rad**2,2*(outer_rad)**2)  # x-coordinates of objects
+o2      =   runif(J,outer_rad**2,2*(outer_rad)**2)  # y-coordinates of objects
+objects =  cbind(o1,o2)
+
+
+
+
+
+# Initialize xt such that it is in the starting position inside the inner circle
+
+
+
+delt    =  0.025            # How big are the steps you can take?
+
+rad     =  0.05  
+
+
+
+# 3-3 NN
+model = function(xt,theta,nodes)
+{
+  # Infer dimensions:
+   N = dim(xt)[1] # input #features/cords
+   p = dim(xt)[2] # length of weight vect
+   q = 2 # dim[2] of output layer!
+   dims = c(p,nodes,q)
+  
+   # Populate weight and bias matrices for neural net:
+   index = 1:(dims[1]*dims[2])
+   W1    = matrix(theta[index],dims[1],dims[2])
+   index = max(index)+1:(dims[2]*dims[3])
+   W2    = matrix(theta[index],dims[2],dims[3])
+   #index = max(index)+1:(dims[3]*dims[4])
+   #W3    = matrix(theta[index],dims[3],dims[4])
+
+   index = max(index)+1:(dims[2])
+   b1    = matrix(theta[index],dims[2],1)
+   index = max(index)+1:(dims[3])
+   # b2    = matrix(theta[index],dims[3],1)
+   # index = max(index)+1:(dims[4])
+   b2    = matrix(theta[index],dims[3],1)
+
+   ones    = matrix(1,N,1)
+   a0      = t(xt)
+   
+   # Evaluate the updating equation in matrix form
+   a1 = tanh(t(W1)%*%a0+b1%*%t(ones)) # hidden layer 1
+   a2 = tanh(t(W2)%*%a1+b2%*%t(ones)) # output layer
+   #a2 = tanh(t(W3)%*%a1+b2%*%t(ones)) 
+
+   # Return a list of relevant objects:
+   return(list(a2 = matrix(a2,ncol=2,nrow=1) )) # output layer pred
+   #return(list(a1=a1))
+}
+
+p     = 2
+q     = 2
+nodes = 2
+npars = p*nodes+nodes*q+nodes+q # total num param
+theta_rand = runif(npars,-1,1)
+res_net = model(xt,runif(npars,-1,1),nodes);res_net
+
+
+plot_game = function(xt,objects,rad,center=matrix(c(0,0),nrow=1,ncol=2), inner_rad,outer_rad)
+{
+  plot(NULL, type ='n', col = 'darkgreen',xlim=c(-2,2),ylim=c(-2,2))
+       
+  # plot inner and outer circles
+  
+  theta = seq(0, 2 * pi, length.out = 200)
+
+  x_inner = center[1] + inner_rad * cos(theta)
+  y_inner = center[2] + inner_rad * sin(theta)
+
+
+  x_outer = center[1] + outer_rad * cos(theta)
+  y_outer = center[2] + outer_rad * sin(theta)
+
+  
+  lines(x_outer, y_outer, col = "purple", lwd = 2)
+  lines(x_inner, y_inner, col = "blue", lwd = 2)
+  abline(h = 0, v = 0, col = "gray", lty = 2)
+  
+  points(xt[,2]~xt[,1],pch = 9,col = 'black')
+  points(objects[,1],objects[,2],pch=19,col='green')
+  # abline(v = c(-1,1), lty = 3,col = 'black',lwd = 2)
+  # abline(h = c(-1,1), lty = 3,col = c('black','black'), lwd = 2)
+}
+
+#plot_game(xt,objects,rad,inner_rad=inner_rad,outer_rad=outer_rad)
+
+
+
+# play a game func
+
+
+play_a_game = function(x0,delt,objects,rad,theta,plt = FALSE,trace = FALSE,nodes)
+{
+  k           =   1  # Count how many steps
+  xt          =   x0 # Set the initial coordinate(s) for the drone.
+  trajectory = matrix(0,2,100) # store the the postions that the drone takes through out the game/how it moves
+  trajectory[,1] = x0
+
+  # Check the game status:
+  res_status  = game_status(xt,objects,rad)
+
+  if(plt)
+  {
+  	plot_game(xt,objects,rad,c('red','black','green')[res_status$status+2])
+
+  }
+  while((res_status$status==0)&(k<100)) # single game=100 steps
+  {
+    k = k+1
+    
+    # Now, let the model update the position of the pieces:
+    ct = model(xt,theta,nodes) #res_status$closest
+    xt =  xt+ct*delt
+
+    # Checkk the game status after the positions are updates:
+    res_status  = game_status(xt,objects,rad)
+    if(trace)
+    {
+    	trajectory[,k] = xt
+    }
+    if(plt)
+    {
+      plot_game(xt,objects,rad,inner_rad=inner_rad,outer_rad=outer_rad)
+      
+      plot_game(xt,objects,rad,c('red','black','green')[res_status$status+2])
+title(main = paste0('Step/Iteration ',k))
+#Sys.sleep(0.1)
+    }
+  }
+  trajectory = trajectory[,1:k,drop = FALSE]
+    if(trace)
+  {
+  	lines(trajectory[2,]~trajectory[1,],col = 'lightgrey')
+  }
+  return(list(k = k, status = res_status$status,xt= xt,trajectory = trajectory))
+}
+
+x0=xt
+theta=theta_rand
+
+play(xt,delt,objects,rad,theta,plt = TRUE,trace = TRUE)
+
+
+
+# Obj func
+play_T_games = function(theta,J,T_games=1) # This is our obj function!
+{
+	score = 0
+	for(i in 1:T_games)
+	{
+    o1      =   runif(J,outer_rad**2,2*(outer_rad)**2)  # x-coordinates of objects
+    o2      =   runif(J,outer_rad**2,2*(outer_rad)**2)  # y-coordinates of objects
+  objects =  cbind(o1,o2)
+  xt=matrix(cbind(runif(1,inner_rad**2,2*(inner_rad)**2),runif(1,inner_rad**2,2*(inner_rad)**2)),nrow=1,ncol=2)
+   res_play = play(xt,delt,objects,rad,theta,plt = FALSE,trace = FALSE)
+   score    = score+(res_play$status==+1) # number of times when we got to the other side
+	}
+  return(score/T_games)
+}
+play_T_games(theta_rand)
+
+
+
+# Use GA function 
+
+library('GA')
+GA <- ga(type   = 'real-valued',
+	      fitness = play_T_games, # used here to get the optimal theta
+	      lower   = rep(-10,npars), # lower bound vector 
+	      upper   = rep(+10,npars), # upper bound vect
+	      popSize = 100,
+	      maxiter = 100)
+
+plot(GA)
+
+theta_hat = GA@solution[1,] # note  @solution to get optimal theta
+theta_hat
+
+
+```
+
+```{r}
+# plot a circle in r
+set.seed(123)
+theta = seq(0, 2 * pi, length.out = 200)
+r_inner=0.25
+center=matrix(c(0,0),nrow=1,ncol=2)
+
+x_inner = center[1] + r_inner * cos(theta)
+y_inner = center[2] + r_inner * sin(theta)
+
+r_outer=1
+x_outer = center[1] + r_outer * cos(theta)
+y_outer = center[2] + r_outer * sin(theta)
+
+# 5. Draw the circle line
+plot(NULL, xlim=c(min(x_outer),max(x_outer)), ylim=c(-1,1))
+xt=matrix(cbind(runif(1,inner_rad**2,2*(inner_rad)**2),runif(1,inner_rad**2,2*(inner_rad)**2)),nrow=1,ncol=2)
+
+
+lines(x_outer, y_outer, col = "purple", lwd = 2)
+lines(x_inner, y_inner, col = "blue", lwd = 2)
+points(xt[,1],xt[,2],col='green')
+abline(h = 0, v = 0, col = "gray", lty = 2) # Add axis lines
+
+
+outer_points =cbind(x_outer ,y_outer)
+inner_points=cbind(x_inner ,y_inner)
+
+ones_outer=matrix(1,nrow=dim(outer_points)[1],1)
+ones_inner=matrix(1,nrow=dim(inner_points)[1],1)
+
+
+# distance matrix
+outer_circle_point_dist = sqrt(rowSums((
+center - xt)^2))
+
+inner_circle_point_dist = sqrt(rowSums((
+center - xt)^2))
+
+
+# get the min distance between xt and the inner/outer circles
+outer_circle_point_dist_min=min(outer_circle_point_dist)
+inner_circle_point_dist_min=min(inner_circle_point_dist)
+
+# check if this distance is less/greater than circle radius to determin the point position
+outer_circle_point_dist_min>r_outer;inner_circle_point_dist_min>r_inner
+
+
+
+
+
+
+
+```
