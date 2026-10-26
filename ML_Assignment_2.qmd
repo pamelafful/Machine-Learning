@@ -147,10 +147,9 @@ set.seed(2024)
 # Initialize/Arrange object st they lie in outer circle/inner circle
 
 J       =   50 # num trees/objects to avoid
-o1      =   runif(J,outer_rad**2,2*(outer_rad)**2)  # x-coordinates of objects
-o2      =   runif(J,outer_rad**2,2*(outer_rad)**2)  # y-coordinates of objects
+o1      =   runif(J,-outer_rad,outer_rad)  # x-coordinates of objects
+o2      =   runif(J,-outer_rad,outer_rad)  # y-coordinates of objects
 objects =  cbind(o1,o2)
-
 
 
 
@@ -163,9 +162,9 @@ delt    =  0.025            # How big are the steps you can take?
 
 rad     =  0.05  
 
+####################################################
 
-
-# 3-3 NN
+# 3-3 NN to control drone movements
 model = function(xt,theta,nodes)
 {
   # Infer dimensions:
@@ -202,6 +201,7 @@ model = function(xt,theta,nodes)
    #return(list(a1=a1))
 }
 
+###############Test the above####################
 p     = 2
 q     = 2
 nodes = 2
@@ -210,6 +210,7 @@ theta_rand = runif(npars,-1,1)
 res_net = model(xt,runif(npars,-1,1),nodes);res_net
 
 
+#################### plot game function
 plot_game = function(xt,objects,rad,center=matrix(c(0,0),nrow=1,ncol=2), inner_rad,outer_rad)
 {
   plot(NULL, type ='n', col = 'darkgreen',xlim=c(-2,2),ylim=c(-2,2))
@@ -231,21 +232,20 @@ plot_game = function(xt,objects,rad,center=matrix(c(0,0),nrow=1,ncol=2), inner_r
   abline(h = 0, v = 0, col = "gray", lty = 2)
   
   points(xt[,2]~xt[,1],pch = 9,col = 'black')
-  points(objects[,1],objects[,2],pch=19,col='green')
+  points(objects[,1],objects[,2],pch=19,col='darkgreen')
   # abline(v = c(-1,1), lty = 3,col = 'black',lwd = 2)
   # abline(h = c(-1,1), lty = 3,col = c('black','black'), lwd = 2)
 }
 
-#plot_game(xt,objects,rad,inner_rad=inner_rad,outer_rad=outer_rad)
+plot_game(xt,objects,rad,inner_rad=inner_rad,outer_rad=outer_rad)
 
+#######################################
 
+# play a single game
 
-# play a game func
-
-
-play_a_game = function(x0,delt,objects,rad,theta,plt = FALSE,trace = FALSE,nodes)
+play_a_game = function(x0,delt,objects,rad,theta,plt = FALSE,trace = FALSE,nodes,inner_rad=innner_rad,outer_rad=outer_rad)
 {
-  k           =   1  # Count how many steps
+  k           =   1  # Count how many iterations
   xt          =   x0 # Set the initial coordinate(s) for the drone.
   trajectory = matrix(0,2,100) # store the the postions that the drone takes through out the game/how it moves
   trajectory[,1] = x0
@@ -255,7 +255,7 @@ play_a_game = function(x0,delt,objects,rad,theta,plt = FALSE,trace = FALSE,nodes
 
   if(plt)
   {
-  	plot_game(xt,objects,rad,c('red','black','green')[res_status$status+2])
+  	plot_game(xt,objects,rad,c('red','black','darkgreen')[res_status$status+2])
 
   }
   while((res_status$status==0)&(k<100)) # single game=100 steps
@@ -263,20 +263,20 @@ play_a_game = function(x0,delt,objects,rad,theta,plt = FALSE,trace = FALSE,nodes
     k = k+1
     
     # Now, let the model update the position of the pieces:
-    ct = model(xt,theta,nodes) #res_status$closest
+    ct = model(xt,theta,nodes)$a2 #res_status$closest
     xt =  xt+ct*delt
 
     # Checkk the game status after the positions are updates:
     res_status  = game_status(xt,objects,rad)
     if(trace)
     {
-    	trajectory[,k] = xt
+    	trajectory[,k] = t(xt)
     }
     if(plt)
     {
       plot_game(xt,objects,rad,inner_rad=inner_rad,outer_rad=outer_rad)
       
-      plot_game(xt,objects,rad,c('red','black','green')[res_status$status+2])
+      plot_game(xt,objects,rad,c('red','black','darkgreen')[res_status$status+2])
 title(main = paste0('Step/Iteration ',k))
 #Sys.sleep(0.1)
     }
@@ -289,33 +289,56 @@ title(main = paste0('Step/Iteration ',k))
   return(list(k = k, status = res_status$status,xt= xt,trajectory = trajectory))
 }
 
-x0=xt
-theta=theta_rand
 
-play(xt,delt,objects,rad,theta,plt = TRUE,trace = TRUE)
+  
+outer_rad_input=1
+inner_rad_input=0.25
+x0=matrix(cbind(runif(1,inner_rad**2,2*(inner_rad)**2),runif(1,inner_rad**2,2*(inner_rad)**2)),nrow=1,ncol=2)
+
+play_a_game(x0,delt,objects,rad,theta,plt = FALSE,trace = FALSE,nodes,inner_rad=1,outer_rad=0.25)
+  
 
 
 
-# Obj func
-play_T_games = function(theta,J,T_games=1) # This is our obj function!
+
+############# Obj func
+play_T_games = function(x0,theta,nodes=2,inner_rad_in=0.25,outer_rad_in=1,T_games=100,J=   50) # This is our obj function!
 {
-	score = 0
+  
+	 # num trees/objects to avoid
+  score=0
+  xt=x0
+	
 	for(i in 1:T_games)
 	{
-    o1      =   runif(J,outer_rad**2,2*(outer_rad)**2)  # x-coordinates of objects
-    o2      =   runif(J,outer_rad**2,2*(outer_rad)**2)  # y-coordinates of objects
+	 
+	o1      =   runif(J,-outer_rad,outer_rad)  # x-coordinates of objects
+  o2      =   runif(J,-outer_rad,outer_rad)  # y-coordinates of objects
   objects =  cbind(o1,o2)
-  xt=matrix(cbind(runif(1,inner_rad**2,2*(inner_rad)**2),runif(1,inner_rad**2,2*(inner_rad)**2)),nrow=1,ncol=2)
-   res_play = play(xt,delt,objects,rad,theta,plt = FALSE,trace = FALSE)
+	#score = 0
+ #starting position
+   res_play = play_a_game(xt,delt,objects,rad,theta,plt = FALSE,trace = FALSE,nodes,inner_rad=inner_rad_in,outer_rad=outer_rad_in)$status
    score    = score+(res_play$status==+1) # number of times when we got to the other side
 	}
-  return(score/T_games)
+  return(score/T_games) # objective to maximise
 }
-play_T_games(theta_rand)
+
+########################test the above
+#x0=xt
+theta=theta_rand
+nodes=nodes
+
+x0=matrix(cbind(runif(1,inner_rad**2,2*(inner_rad)**2),runif(1,inner_rad**2,2*(inner_rad)**2)),nrow=1,ncol=2)
+theta=theta_rand
+nodes=nodes
 
 
+play_T_games(x0,theta_rand,nodes)
 
+
+###################GA function to get weights################
 # Use GA function 
+nodes=3
 
 library('GA')
 GA <- ga(type   = 'real-valued',
@@ -323,7 +346,7 @@ GA <- ga(type   = 'real-valued',
 	      lower   = rep(-10,npars), # lower bound vector 
 	      upper   = rep(+10,npars), # upper bound vect
 	      popSize = 100,
-	      maxiter = 100)
+	      maxiter = 200) # nr generations
 
 plot(GA)
 
@@ -384,6 +407,11 @@ outer_circle_point_dist_min>r_outer;inner_circle_point_dist_min>r_inner
 
 
 
+
+
+```
+
+```{r}
 
 
 ```
