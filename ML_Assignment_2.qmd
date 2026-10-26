@@ -318,6 +318,8 @@ plot(GA)
 theta_hat = GA@solution[1,] # note  @solution to get optimal theta
 theta_hat
 
+save(GA,file='ga_results.rds')
+
 
 ```
 
