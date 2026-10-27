@@ -146,9 +146,9 @@ theta_rand = runif(npars,-1,1)
 model = function(xt,theta,nodes)
 {
   # Infer dimensions:
-   N = dim(xt)[1] # input #features/cords
+  N = dim(xt)[1] # input #features/cords
    p = dim(xt)[2] # length of weight vect
-   q = 2 # dim[2] of output layer!
+   q = 2 # output steps
    dims = c(p,nodes,q)
   
    # Populate weight and bias matrices for neural net:
@@ -156,14 +156,11 @@ model = function(xt,theta,nodes)
    W1    = matrix(theta[index],dims[1],dims[2])
    index = max(index)+1:(dims[2]*dims[3])
    W2    = matrix(theta[index],dims[2],dims[3])
-   #index = max(index)+1:(dims[3]*dims[4])
-   #W3    = matrix(theta[index],dims[3],dims[4])
+   index = max(index)+1#:(dims[2]*dims[3])
 
-   index = max(index)+1:(dims[2])
+
    b1    = matrix(theta[index],dims[2],1)
-   index = max(index)+1:(dims[3])
-   # b2    = matrix(theta[index],dims[3],1)
-   # index = max(index)+1:(dims[4])
+   index = max(index)+1
    b2    = matrix(theta[index],dims[3],1)
 
    ones    = matrix(1,N,1)
@@ -176,7 +173,7 @@ model = function(xt,theta,nodes)
 
    # Return a list of relevant objects:
    return(list(a2 = matrix(a2,ncol=2,nrow=1) )) # output layer pred
-   #return(list(a1=a1))
+   #
 }
 
 ###############Test the above####################
@@ -258,7 +255,7 @@ play_a_game = function(xt,delt,objects,rad,theta,plt = F,trace = TRUE,nodes,inne
   return(list(k = k, status = res_status$status,xt= xt,trajectory = trajectory,dmin=dmin_final))
 }
 
-play_a_game(x0+0.0045,delt,objects,rad,theta_opt,nodes=2,plt = F)
+#play_a_game(x0+0.0045,delt,objects,rad,theta_opt,nodes=2,plt = F)
 
 
 
@@ -312,7 +309,7 @@ library('GA')
 
 
 
-saveRDS(GA,file='ga_results.rds')
+#saveRDS(GA,file='ga_results.rds')
 GA=readRDS('ga_results.rds')
 plot(GA)
 # note  @solution to get optimal thet
@@ -372,9 +369,6 @@ cbind(x0,add_arg0)
 
 model_2 = function(xt_input,theta,nodes,add_arg) #add_arg= 1/(dmin-r)
 {
-  # Infer dimensions:
-  # xt_input=x0
-  # add_arg=add_arg0  theta=theta_opt;length(theta_opt)
   xt=cbind(xt_input,add_arg)
    N = dim(xt)[1] # input #features/cords
    p = dim(xt)[2] # length of weight vect
@@ -488,9 +482,87 @@ avg_win_rate_2=mean(win)
 
 #### d) Experimental Setup 3
 
-```{r}
+```{r,vary_tree_start}
+
+ # modified to make a new draw and tree config
+play_a_game_mod2 = function(delt,rad,theta,plt = F,trace = TRUE,nodes,inner_rad=0.25,outer_rad=1)
+{
+  # random start
+  xt=matrix(cbind(runif(1,inner_rad**2,2*(inner_rad)**2),runif(1,inner_rad**2,2*(inner_rad)**2)),nrow=1,ncol=2)
+  o1      =   runif(J,-outer_rad,outer_rad)#runif(J,-outer_rad,outer_rad)  # x-coordinates of objects
+  o2      =  runif(J,-(outer_rad)**2,(outer_rad)**2)# runif(J,-outer_rad,outer_rad) 
+  objects =  cbind(o1,o2)
+  k           =   1  # Count how many iterations
+  xt          =   xt # Set the initial coordinate(s) for the drone.
+  trajectory = matrix(0,2,100) # store the the postions that the drone takes through out the game/how it moves
+  trajectory[,1] = t(xt)
+
+  # Check the game status:
+  res_status  = game_status(xt,objects,rad)
+  d_min=sqrt(sum((res_status$closest - xt)^2))
+
+  
+  if(plt)
+  {
+  	  plot_game(xt,objects,rad,center=matrix(c(0,0),nrow=1,ncol=2),inner_rad=0.25,outer_rad=1)
+  }
+  while((res_status$status==0)&(k<100)) # single game=100 steps
+  {
+    k = k+1
+    
+    # Now, let the model update the position of the pieces:
+    add_arg=(1/(d_min-rad))
+    ct = model_2(xt,theta,nodes,add_arg)$a2 #res_status$closest
+    xt =  xt+ct*delt
+    
+    #print(paste0('k: ',k,'xt_new: ',xt))
+
+    # Checkk the game status after the positions are updates:
+    
+    res_status  = game_status(xt,objects,rad)
+    
+    trajectory[,k] = t(xt)
+ 
+  }
+  trajectory = trajectory[,1:k,drop = FALSE]
+    if(plt)
+  {
+  	lines(trajectory[2,]~trajectory[1,],col = 'darkred',lwd=2)
+    #point(trajectory[2,]~trajectory[1,],col = 'darkred',lwd=2)  
+    points(xt[,2]~xt[,1],pch = 9,col = 'black')
+  }
+  
+  dmin_final=sqrt(sum((res_status$closest - xt)^2))
+  
+  return(list(k = k, status = res_status$status,xt= xt,trajectory = trajectory,dmin_final=dmin_final))
+}
+
+
+play_a_game_mod2(delt,rad,theta_opt,plt = T,trace = TRUE,nodes,inner_rad=0.25,outer_rad=1)
+
+
+
+
+
 
 ```
+
+```{r,game_traj}
+
+win = c()
+for(i in 1:100)
+{
+  res_final=play_a_game_mod2(delt,rad,theta_opt,plt = T,trace = TRUE,nodes,inner_rad=0.25,outer_rad=1)
+
+  #lines(res_final$trajectory[2,]~res_final$trajectory[1,])
+  win[i] = (res_final$status==1)
+}
+avg_win_rate_3=mean(win);avg_win_rate_3
+```
+
+#### Question 2
+
+a\)
 
 ```{r,plot_check}
 # plot a circle in r
