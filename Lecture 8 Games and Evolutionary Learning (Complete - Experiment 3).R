@@ -181,7 +181,7 @@ play_T_games(theta_rand)
 #========================================================================
 
 library('GA')
-GA <- ga(type   = 'real-valued',
+GA_lect <- ga(type   = 'real-valued',
 	      fitness = play_T_games, # used here to get the optimal theta
 	      lower   = rep(-10,npars), # lower bound vector 
 	      upper   = rep(+10,npars), # upper bound vect
@@ -190,7 +190,7 @@ GA <- ga(type   = 'real-valued',
 
 plot(GA)
 
-theta_hat = GA@solution[1,] # note  @solution to get optimal theta
+theta_hat = GA_lect@solution[1,] # note  @solution to get optimal theta
 theta_hat
  
  

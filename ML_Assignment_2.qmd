@@ -72,6 +72,7 @@ library(knitr)
 library(ggplot2)
 library(reshape2)
 
+
 ```
 
 # Drone Escape
@@ -80,6 +81,9 @@ a\)
 
 ```{r,param_set_up,echo=T}
 set.seed(2023)
+
+outer_rad=1
+inner_rad=0.25
 
 J       =   50 # num trees/objects to avoid
 o1      =   runif(J,-outer_rad,outer_rad)  # x-coordinates of objects
@@ -120,7 +124,7 @@ game_status = function(xt, objects, rad, center = matrix(c(0,0), nrow=1, ncol=2)
 game_status(x0, objects, rad, center = matrix(c(0,0), nrow=1, ncol=2), outer_rad = 1)
 ```
 
-b\)
+#### b) Experimental Setup 1
 
 ```{r}
 set.seed(2024)
@@ -132,7 +136,7 @@ set.seed(2024)
 
 p     = 2
 q     = 2
-nodes = 2
+nodes =2
 npars = p*nodes+nodes*q+nodes+q # total num param
 theta_rand = runif(npars,-1,1)
 
@@ -202,30 +206,29 @@ plot_game = function(xt,objects,rad,center=matrix(c(0,0),nrow=1,ncol=2),inner_ra
   
   points(xt[,2]~xt[,1],pch = 9,col = 'black')
   points(objects[,1],objects[,2],pch=19,col='darkgreen')
-  # abline(v = c(-1,1), lty = 3,col = 'black',lwd = 2)
-  # abline(h = c(-1,1), lty = 3,col = c('black','black'), lwd = 2)
+  abline(v = c(-1,1), lty = 3,col = 'black',lwd = 2)
+  abline(h = c(-1,1), lty = 3,col = c('black','black'), lwd = 2)
 }
 
-#plot_game(x0,objects,rad)
+#plot_game(x0,objects,rad,plt = T)
 
 #######################################
 
 # play a single game
 
-play_a_game = function(xt,delt,objects,rad,theta,plt = FALSE,trace = TRUE,nodes,inner_rad=0.25,outer_rad=1)
+play_a_game = function(xt,delt,objects,rad,theta,plt = F,trace = TRUE,nodes,inner_rad=0.25,outer_rad=1)
 {
   k           =   1  # Count how many iterations
-  xt          =   x0 # Set the initial coordinate(s) for the drone.
+  xt          =   xt # Set the initial coordinate(s) for the drone.
   trajectory = matrix(0,2,100) # store the the postions that the drone takes through out the game/how it moves
-  #trajectory[,1] = t(x0)
+  trajectory[,1] = t(x0)
 
   # Check the game status:
   res_status  = game_status(xt,objects,rad)
 
   if(plt)
   {
-  	plot_game(xt,objects,rad,c('red','black','darkgreen')[res_status$status+2])
-
+  	  plot_game(xt,objects,rad,center=matrix(c(0,0),nrow=1,ncol=2),inner_rad=0.25,outer_rad=1)
   }
   while((res_status$status==0)&(k<100)) # single game=100 steps
   {
@@ -238,31 +241,24 @@ play_a_game = function(xt,delt,objects,rad,theta,plt = FALSE,trace = TRUE,nodes,
     #print(paste0('k: ',k,'xt_new: ',xt))
 
     # Checkk the game status after the positions are updates:
-    res_status  = game_status(xt,objects,rad)
-    #print(paste('status',res_status$status  ))
     
+    res_status  = game_status(xt,objects,rad)
+    
+    trajectory[,k] = t(xt)
  
-    #trajectory[,k] = t(xt)
-
-#     if(plt)
-#     {
-#       plot_game(xt,objects,rad,inner_rad=inner_rad,outer_rad=outer_rad)
-#       
-#       plot_game(xt,objects,rad,c('red','black','darkgreen')[res_status$status+2])
-# title(main = paste0('Step/Iteration ',k))
-# #Sys.sleep(0.1)
-#     }
   }
   trajectory = trajectory[,1:k,drop = FALSE]
-  #   if(trace)
-  # {
-  # 	lines(trajectory[2,]~trajectory[1,],col = 'lightgrey')
-  # }
+    if(plt)
+  {
+  	lines(trajectory[2,]~trajectory[1,],col = 'darkgrey')
+  }
   
-  return(list(k = k, status = res_status$status,xt= xt,trajectory = trajectory))
+  dmin_final=sqrt(sum((res_status$closest - xt)^2))
+  
+  return(list(k = k, status = res_status$status,xt= xt,trajectory = trajectory,dmin=dmin_final))
 }
 
-play_a_game(x0,delt,objects,rad,theta_rand,nodes=2)
+play_a_game(x0+0.0045,delt,objects,rad,theta_opt,nodes=2,plt = F)
 
 
 
@@ -273,7 +269,7 @@ play_T_games = function(theta) # This is our obj function!
   
 	 # num trees/objects to avoid
   score=0
-  xt=matrix(cbind(runif(1,inner_rad**2,2*(inner_rad)**2),runif(1,inner_rad**2,2*(inner_rad)**2)),nrow=1,ncol=2)
+
 	
 	for(i in 1:T_games)
 	{
@@ -283,6 +279,7 @@ play_T_games = function(theta) # This is our obj function!
   objects =  cbind(o1,o2)
 	#score = 0
  #starting position
+    xt=matrix(cbind(runif(1,-inner_rad,inner_rad),runif(1,-inner_rad,-inner_rad)),nrow=1,ncol=2)
    res_play = play_a_game(xt,delt,objects,rad,theta,plt = FALSE,trace = FALSE,nodes,inner_rad=inner_rad_in,outer_rad=outer_rad_in)
    score    = score+(res_play$status==+1) # number of times when we got to the other side
    #print(paste0('T: ',i,'Score: ',score,'res: ',res_play$status))
@@ -306,26 +303,198 @@ nodes=2
 
 
 library('GA')
-GA <- ga(type   = 'real-valued',
-	      fitness = play_T_games, # used here to get the optimal theta
-	      lower   = rep(-10,npars), # lower bound vector 
-	      upper   = rep(+10,npars), # upper bound vect
-	      popSize = 100,
-	      maxiter = 200) # nr generations
+# GA <- ga(type   = 'real-valued',
+# 	      fitness = play_T_games, # used here to get the optimal theta
+# 	      lower   = rep(-10,npars), # lower bound vector
+# 	      upper   = rep(+10,npars), # upper bound vect
+# 	      popSize = 100,
+# 	      maxiter = 200) # nr generations
 
+
+
+saveRDS(GA,file='ga_results.rds')
+GA=readRDS('ga_results.rds')
 plot(GA)
-
-theta_hat = GA@solution[1,] # note  @solution to get optimal theta
-theta_hat
-
-save(GA,file='ga_results.rds')
-
+# note  @solution to get optimal thet
+theta_opt=GA@solution[1,]
+theta_opt
 
 ```
 
+```{r,new_draw}
+
+outer_rad=1
+inner_rad=0.25
+
+J       =   50 # num trees/objects to avoid
+o1      =   runif(J,-outer_rad,outer_rad)  # x-coordinates of objects
+o2      =   runif(J,-outer_rad,outer_rad)  # y-coordinates of objects
+objects =  cbind(o1,o2)
+inner_rad=0.25
+
+x0_start=matrix(runif(2,-inner_rad,inner_rad),nrow=1,ncol=2)
+theta=  
+  
+win = c()
+for(i in 1:100)
+{
+  o1      =   runif(J,-outer_rad,outer_rad)  # x-coordinates of objects
+  o2      =   runif(J,-outer_rad,outer_rad) 
+  objects =  cbind(o1,o2)
+  xt_try    = matrix(runif(2,-inner_rad,inner_rad),nrow=1,ncol=2)
+  # plot_game(xt_try,objects,rad,center=matrix(c(0,0),nrow=1,ncol=2),inner_rad=0.25,outer_rad=1)
+  res_final = play_a_game(xt_try,delt,objects,rad,theta_opt,plt = TRUE,trace = TRUE,nodes,inner_rad=0.25,outer_rad=1)
+  lines(res_final$trajectory[2,]~res_final$trajectory[1,])
+  win[i] = (res_final$status==1)
+}
+avg_win_rate_1=mean(win)
+
+
+avg_win_rate_1
+
+```
+
+iii\) \*comeback\
+
+#### c) Experimental Setup 2
+
+i\)
+
 ```{r}
+
+d_min0=play_a_game(xt_try,delt,objects,rad,theta_opt,plt = TRUE,trace = TRUE,nodes,inner_rad=0.25,outer_rad=1)$dmin
+r=rad
+
+add_arg0=matrix((1/(d_min0-r)),ncol=1,nrow=1)
+
+cbind(x0,add_arg0)
+
+
+model_2 = function(xt_input,theta,nodes,add_arg) #add_arg= 1/(dmin-r)
+{
+  # Infer dimensions:
+  # xt_input=x0
+  # add_arg=add_arg0  theta=theta_opt;length(theta_opt)
+  xt=cbind(xt_input,add_arg)
+   N = dim(xt)[1] # input #features/cords
+   p = dim(xt)[2] # length of weight vect
+   q = 2 # output steps
+   dims = c(p,nodes,q)
+  
+   # Populate weight and bias matrices for neural net:
+   index = 1:(dims[1]*dims[2])
+   W1    = matrix(theta[index],dims[1],dims[2])
+   index = max(index)+1:(dims[2]*dims[3])
+   W2    = matrix(theta[index],dims[2],dims[3])
+   index = max(index)+1#:(dims[2]*dims[3])
+
+
+   b1    = matrix(theta[index],dims[2],1)
+   index = max(index)+1
+   b2    = matrix(theta[index],dims[3],1)
+
+   ones    = matrix(1,N,1)
+   a0      = t(xt)
+   
+   # Evaluate the updating equation in matrix form
+   a1 = tanh(t(W1)%*%a0+b1%*%t(ones)) # hidden layer 1
+   a2 = tanh(t(W2)%*%a1+b2%*%t(ones)) # output layer
+   #a2 = tanh(t(W3)%*%a1+b2%*%t(ones)) 
+
+   # Return a list of relevant objects:
+   return(list(a2 = matrix(a2,ncol=2,nrow=1) )) # output layer pred
+   #return(list(a1=a1))
+}
+
+model_2(x0,theta_opt,nodes=nodes,add_arg0)
+
+
+
+
+# Modify play a game function
+
+play_a_game_mod = function(xt,delt,objects,rad,theta,plt = F,trace = TRUE,nodes,inner_rad=0.25,outer_rad=1)
+{
+  k           =   1  # Count how many iterations
+  xt          =   xt # Set the initial coordinate(s) for the drone.
+  trajectory = matrix(0,2,100) # store the the postions that the drone takes through out the game/how it moves
+  trajectory[,1] = t(xt)
+
+  # Check the game status:
+  res_status  = game_status(xt,objects,rad)
+  d_min=sqrt(sum((res_status$closest - xt)^2))
+  
+  if(plt)
+  {
+  	  plot_game(xt,objects,rad,center=matrix(c(0,0),nrow=1,ncol=2),inner_rad=0.25,outer_rad=1)
+  }
+  while((res_status$status==0)&(k<100)) # single game=100 steps
+  {
+    k = k+1
+    
+    # Now, let the model update the position of the pieces:
+    add_arg=(1/(d_min-rad))
+    ct = model_2(xt,theta,nodes,add_arg)$a2 #res_status$closest
+    xt =  xt+ct*delt
+    
+    #print(paste0('k: ',k,'xt_new: ',xt))
+
+    # Checkk the game status after the positions are updates:
+    
+    res_status  = game_status(xt,objects,rad)
+    
+    trajectory[,k] = t(xt)
+ 
+  }
+  trajectory = trajectory[,1:k,drop = FALSE]
+    if(plt)
+  {
+  	lines(trajectory[2,]~trajectory[1,],col = 'darkred',lwd=2)
+    #point(trajectory[2,]~trajectory[1,],col = 'darkred',lwd=2)  
+    points(xt[,2]~xt[,1],pch = 9,col = 'black')
+  }
+  
+  dmin_final=sqrt(sum((res_status$closest - xt)^2))
+  
+  return(list(k = k, status = res_status$status,xt= xt,trajectory = trajectory,dmin_final=dmin_final))
+}
+
+
+play_a_game_mod(matrix(runif(2,-inner_rad,inner_rad), nrow=1,ncol=2),delt,objects,rad,theta_opt,nodes=2,plt = T)
+
+```
+
+ii\)
+
+```{r,plot_mod}
+
+# Repeat plots
+
+win = c()
+for(i in 1:100)
+{
+  o1      =   runif(J,-outer_rad,outer_rad)  # x-coordinates of objects
+  o2      =   runif(J,-outer_rad,outer_rad) 
+  objects =  cbind(o1,o2)
+  xt_try    = matrix(runif(2,-inner_rad,inner_rad),nrow=1,ncol=2)
+  # plot_game(xt_try,objects,rad,center=matrix(c(0,0),nrow=1,ncol=2),inner_rad=0.25,outer_rad=1)
+  res_final = play_a_game_mod(xt_try,delt,objects,rad,theta_opt,plt = TRUE,trace = TRUE,nodes,inner_rad=0.25,outer_rad=1)
+  #lines(res_final$trajectory[2,]~res_final$trajectory[1,])
+  win[i] = (res_final$status==1)
+}
+avg_win_rate_2=mean(win)
+
+```
+
+#### d) Experimental Setup 3
+
+```{r}
+
+```
+
+```{r,plot_check}
 # plot a circle in r
-set.seed(123)
+#set.seed(123)
 theta = seq(0, 2 * pi, length.out = 200)
 r_inner=0.25
 center=matrix(c(0,0),nrow=1,ncol=2)
@@ -339,7 +508,7 @@ y_outer = center[2] + r_outer * sin(theta)
 
 # 5. Draw the circle line
 plot(NULL, xlim=c(min(x_outer),max(x_outer)), ylim=c(-1,1))
-xt=matrix(cbind(runif(1,inner_rad**2,2*(inner_rad)**2),runif(1,inner_rad**2,2*(inner_rad)**2)),nrow=1,ncol=2)
+xt=matrix(runif(2,-r_inner,r_inner),nrow=1,ncol=2)
 
 
 lines(x_outer, y_outer, col = "purple", lwd = 2)
@@ -368,7 +537,7 @@ outer_circle_point_dist_min=min(outer_circle_point_dist)
 inner_circle_point_dist_min=min(inner_circle_point_dist)
 
 # check if this distance is less/greater than circle radius to determin the point position
-outer_circle_point_dist_min>r_outer;inner_circle_point_dist_min>r_inner
+#outer_circle_point_dist_min>r_outer;inner_circle_point_dist_min>r_inner
 
 
 
