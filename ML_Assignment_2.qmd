@@ -564,6 +564,29 @@ avg_win_rate_3=mean(win);avg_win_rate_3
 
 a\)
 
+```{r,eval=T,include=F}
+
+game_tree= function(m,k)
+{
+	g = c()
+	game_state = rho(m,S)
+	if(game_state$terminal)
+	{
+		 g = c(g,game_state$winner)
+		 return(g)
+	}else{
+		index = which(m == 0) # open slot on the game board/ vector of open slots
+		for(i in 1:length(index))
+		{
+			x           = m # how the board looks before the next move
+			x[index[i]] = k # next player's turn
+			g           = c(g,game_tree(x,-1*k)) # recursive call, append outcome to g
+		}
+		return(g)
+	}
+}
+```
+
 ```{r,mc_search}
 
 # Define game status
@@ -698,7 +721,91 @@ length(which(game_Ts_atmost_8==1));length(which(game_Ts_atmost_8==-1))
 
 b\)
 
-```{r}
+```{r,mcts}
+mcts= function(m,k,alpha,n_sim=1) 
+{
+	g = c()
+	
+	for(sim in 1:n_sim){
+	x=m
+	game_state = rho(x,S)
+	
+	if(game_state$terminal)
+	{
+		 g = c(g,game_state$winner)
+		 return(g)
+	}else{
+		index_positions = which(m == 0) # open slot on the game board/ vector of open 
+
+		for(i in 1:length(index_positions))
+		{
+		  if (runif(1,0,1) <= alpha) {
+		  x=m
+			picked_index=index_positions[i]
+			
+			x[picked_index] = k # player's turn
+			g  =c(g, mcts(x,k*-1,alpha) )
+			
+			
+		  }
+		}
+		}
+		return(g)
+	}
+	}
+
+
+#Test the above
+# game statuses for 
+
+
+
+```
+
+```{r,compare_mcts}
+
+m0=as.matrix(c(+1, +1, 0, 0, 0, 0, 0, 0,-1))
+
+g_sample=mcts(m0,1,0.95)
+
+num_traj=length(g_sample)
+num_wins_player1=length(  which(g_sample==1))
+num_wins_player2=length( which(g_sample==-1))
+num_wins_ties=length(which(g_sample==0))
+
+num_wins_player1/num_traj;num_wins_player2/num_traj;num_wins_ties/num_traj
+
+
+# True values
+
+print('####True Values from mod function#####')
+
+g_true=game_tree_mod(m0,1,6,n_sim=1,strict=T)
+
+num_traj=length(g_true)
+num_wins_player1=length(  which(g_true==1))
+num_wins_player2=length( which(g_true==-1))
+num_wins_ties=length(which(g_true==0))
+
+num_wins_player1/num_traj;num_wins_player2/num_traj;num_wins_ties/num_traj
+
+print('####using game tree%%%')
+
+g_true=game_tree(m0,1)
+
+num_traj=length(g_true)
+num_wins_player1=length(  which(g_true==1))
+num_wins_player2=length( which(g_true==-1))
+num_wins_ties=length(which(g_true==0))
+
+num_wins_player1/num_traj;num_wins_player2/num_traj;num_wins_ties/num_traj
+
+# Estimates are fairely close with the true values
+
+```
+
+```{r,simulation}
+
 
 ```
 
