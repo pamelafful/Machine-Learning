@@ -724,7 +724,8 @@ b\)
 ```{r,mcts}
 mcts= function(m,k,alpha,n_sim=1) 
 {
-	g = c()
+	
+  g = c()
 	
 	for(sim in 1:n_sim){
 	x=m
@@ -805,6 +806,49 @@ num_wins_player1/num_traj;num_wins_player2/num_traj;num_wins_ties/num_traj
 ```
 
 ```{r,simulation}
+
+#0.9
+m0=as.matrix(c(+1, +1,-1, 0, 0, 0, 0, 0,-1))
+N_sim=100
+G_alpha_9=matrix(NA,nrow=N_sim,ncol=3)
+for(i in 1:N_sim){
+  g_i=mcts(m0,1,alpha=0.9)
+  num_T=length(g_i)
+  win_per_pl1= length(which(g_i==1))/num_T # %player 1 wins
+  G_alpha_9[i,1]=win_per_pl1
+  win_per_pl2= length(which(g_i==-1))/num_T# %player 2 wins
+  G_alpha_9[i,2]=win_per_pl2
+  tie_per= length(which(g_i==0))/num_T# %ties
+  G_alpha_9[i,3]=tie_per
+}
+
+
+G_alpha_7=matrix(NA,nrow=N_sim,ncol=3)
+for(i in 1:N_sim){
+  g_i=mcts(m0,1,alpha=0.7)
+  num_T=length(g_i)
+  win_per_pl1= length(which(g_i==1))/num_T # %player 1 wins
+  G_alpha_7[i,1]=win_per_pl1
+  win_per_pl2= length(which(g_i==-1))/num_T# %player 2 wins
+  G_alpha_7[i,2]=win_per_pl2
+  tie_per= length(which(g_i==0))/num_T# %ties
+  G_alpha_7[i,3]=tie_per
+}
+
+
+# True vals
+
+G_true=matrix(NA,nrow=N_sim,ncol=3)
+for(i in 1:N_sim){
+  g_i=game_tree(m0,1)
+  num_T=length(g_i)
+  win_per_pl1= length(which(g_i==1))/num_T # %player 1 wins
+  G_true[i,1]=win_per_pl1
+  win_per_pl2= length(which(g_i==-1))/num_T# %player 2 wins
+  G_true[i,2]=win_per_pl2
+  tie_per= length(which(g_i==0))/num_T# %ties
+  G_true[i,3]=tie_per
+  }
 
 
 ```
