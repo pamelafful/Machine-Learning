@@ -564,8 +564,8 @@ avg_win_rate_3=mean(win);avg_win_rate_3
 
 a\)
 
-```{r,eval=T,include=F}
-
+```{r,eval=T}
+rm(list = ls())
 game_tree= function(m,k)
 {
 	g = c()
@@ -590,7 +590,7 @@ game_tree= function(m,k)
 ```{r,mc_search}
 
 # Define game status
-rm(list = ls())
+
 
 #===============================================================================
 # Populate the state matrix
@@ -675,7 +675,7 @@ game_tree_mod= function(m,k,n_moves,n_sim=1,strict=T) # n_moves- given mumber of
 # game statuses for 
 
 m0=as.matrix(rep(0,9))
-game_tree_mod(m0,-1,8,strict=F)
+#game_tree_mod(m0,-1,8,strict=F)
 
 
 ```
@@ -767,11 +767,11 @@ mcts= function(m,k,alpha,n_sim=1)
 
 m0=as.matrix(c(+1, +1, 0, 0, 0, 0, 0, 0,-1))
 
-g_sample=mcts(m0,1,0.95)
+g_sample=mcts(m0,-1,0.95)
 
 num_traj=length(g_sample)
-num_wins_player1=length(  which(g_sample==1))
-num_wins_player2=length( which(g_sample==-1))
+num_wins_player1=length(  which(g_sample==-1))
+num_wins_player2=length( which(g_sample==1))
 num_wins_ties=length(which(g_sample==0))
 
 num_wins_player1/num_traj;num_wins_player2/num_traj;num_wins_ties/num_traj
@@ -781,22 +781,22 @@ num_wins_player1/num_traj;num_wins_player2/num_traj;num_wins_ties/num_traj
 
 print('####True Values from mod function#####')
 
-g_true=game_tree_mod(m0,1,6,n_sim=1,strict=T)
+g_true=game_tree_mod(m0,-1,6,n_sim=1,strict=T)
 
 num_traj=length(g_true)
-num_wins_player1=length(  which(g_true==1))
-num_wins_player2=length( which(g_true==-1))
+num_wins_player1=length(  which(g_true==-1))
+num_wins_player2=length( which(g_true==1))
 num_wins_ties=length(which(g_true==0))
 
 num_wins_player1/num_traj;num_wins_player2/num_traj;num_wins_ties/num_traj
 
 print('####using game tree%%%')
 
-g_true=game_tree(m0,1)
+g_true=game_tree(m0,-1)
 
 num_traj=length(g_true)
-num_wins_player1=length(  which(g_true==1))
-num_wins_player2=length( which(g_true==-1))
+num_wins_player1=length(  which(g_true==-1))
+num_wins_player2=length( which(g_true==1))
 num_wins_ties=length(which(g_true==0))
 
 num_wins_player1/num_traj;num_wins_player2/num_traj;num_wins_ties/num_traj
@@ -807,16 +807,25 @@ num_wins_player1/num_traj;num_wins_player2/num_traj;num_wins_ties/num_traj
 
 ```{r,simulation}
 
+
+#| label: fig-subplots
+#| fig-cap: "Relative Game Frequencies"
+#| fig-subcap: 
+#|   - "Distribution of Player 1 Win Freq"
+#|   - "Distribution of Player 2 Win Freq"
+#|   - "Distribution of Tie Game Freq"
+#| layout-ncol: 3
+
 #0.9
 m0=as.matrix(c(+1, +1,-1, 0, 0, 0, 0, 0,-1))
 N_sim=100
 G_alpha_9=matrix(NA,nrow=N_sim,ncol=3)
 for(i in 1:N_sim){
-  g_i=mcts(m0,1,alpha=0.9)
+  g_i=mcts(m0,-1,alpha=0.9)
   num_T=length(g_i)
-  win_per_pl1= length(which(g_i==1))/num_T # %player 1 wins
+  win_per_pl1= length(which(g_i==-1))/num_T # %player 1 wins
   G_alpha_9[i,1]=win_per_pl1
-  win_per_pl2= length(which(g_i==-1))/num_T# %player 2 wins
+  win_per_pl2= length(which(g_i==1))/num_T# %player 2 wins
   G_alpha_9[i,2]=win_per_pl2
   tie_per= length(which(g_i==0))/num_T# %ties
   G_alpha_9[i,3]=tie_per
@@ -825,11 +834,11 @@ for(i in 1:N_sim){
 
 G_alpha_7=matrix(NA,nrow=N_sim,ncol=3)
 for(i in 1:N_sim){
-  g_i=mcts(m0,1,alpha=0.7)
+  g_i=mcts(m0,-1,alpha=0.7)
   num_T=length(g_i)
-  win_per_pl1= length(which(g_i==1))/num_T # %player 1 wins
+  win_per_pl1= length(which(g_i==-1))/num_T # %player 1 wins
   G_alpha_7[i,1]=win_per_pl1
-  win_per_pl2= length(which(g_i==-1))/num_T# %player 2 wins
+  win_per_pl2= length(which(g_i==1))/num_T# %player 2 wins
   G_alpha_7[i,2]=win_per_pl2
   tie_per= length(which(g_i==0))/num_T# %ties
   G_alpha_7[i,3]=tie_per
@@ -840,18 +849,89 @@ for(i in 1:N_sim){
 
 G_true=matrix(NA,nrow=N_sim,ncol=3)
 for(i in 1:N_sim){
-  g_i=game_tree(m0,1)
+  g_i=game_tree(m0,-1)
   num_T=length(g_i)
-  win_per_pl1= length(which(g_i==1))/num_T # %player 1 wins
+  win_per_pl1= length(which(g_i==-1))/num_T # %player 1 wins
   G_true[i,1]=win_per_pl1
-  win_per_pl2= length(which(g_i==-1))/num_T# %player 2 wins
+  win_per_pl2= length(which(g_i==1))/num_T# %player 2 wins
   G_true[i,2]=win_per_pl2
   tie_per= length(which(g_i==0))/num_T# %ties
   G_true[i,3]=tie_per
   }
 
 
+actuals=apply(G_true,2,mean)
+
+col_names=c('Player_1_Win_Freq','Player_2_Win_Freq', 'Tie_Freq','alpha')
+G1=data.frame(cbind(G_alpha_9,as.matrix(rep(0.9,dim(G_alpha_9)[1])))) 
+
+G2=data.frame(cbind(G_alpha_7,as.matrix(rep(0.7,dim(G_alpha_7)[1])))) 
+
+G_all=rbind(G1,G2)
+colnames(G_all)=col_names
+G_all$alpha=as.character(G_all$alpha)
+
+
+
+
+
+# All simulations for different alphas
+# Player 1 wins
+G_all %>% ggplot(aes(y=Player_1_Win_Freq,col=alpha))+
+  geom_boxplot()+
+  labs(
+    title='Distribution of Player One Win Relative Frequencies',
+    x='probability- alpha',
+    y='Frequency'
+  )+
+  geom_hline(yintercept = actuals[1], color = "darkblue", linetype = "dashed", linewidth = 1) +
+ annotate("text", x = 0.35, y = actuals[1]+0.015, label = "actual",
+          vjust = -0.5, color = "darkblue")+
+   theme_minimal() 
+  
+
+
+ # Player 2 wins
+G_all %>% ggplot(aes(y=Player_2_Win_Freq,col=alpha))+
+  geom_boxplot()+
+  labs(
+    title='Distribution of Player Two Win Relative Frequencies',
+    x='probability- alpha',
+    y='Frequency'
+  )+
+  geom_hline(yintercept = actuals[2], color = "darkblue", linetype = "dashed", linewidth = 1) +
+ annotate("text", x = 0.35, y = actuals[2]+0.015, label = "actual",
+          vjust = -0.5, color = "darkblue")+
+   theme_minimal() 
+  
+# Ties
+G_all %>% ggplot(aes(y=Tie_Freq,col=alpha))+
+  geom_boxplot()+
+  labs(
+    title='Distribution of Tie Game Relative Frequencies',
+    x='probability- alpha',
+    y='Frequency'
+  )+
+  geom_hline(yintercept = actuals[3], color = "darkblue", linetype = "dashed", linewidth = 1) +
+ annotate("text", x = 0.35, y = actuals[3]+0.015, label = "actual",
+          vjust = -0.5, color = "darkblue")+
+   theme_minimal() 
+
+
 ```
+
+Key Obs: Median Freq for alpha=0.7 much closer to the true relative freq. Tighter spread across the median- lower degree of variation compared to alpha=0.7. - makes sense since we are closer to searching all branches with higher alpha.
+
+#### Soft- Margin SVM
+
+```{r}
+
+
+```
+
+a\)
+
+\`\`\`
 
 ```{r,plot_check}
 # plot a circle in r
