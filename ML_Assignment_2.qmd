@@ -922,7 +922,7 @@ G_all %>% ggplot(aes(y=Tie_Freq,col=alpha))+
 
 Key Obs: Median Freq for alpha=0.7 much closer to the true relative freq. Tighter spread across the median- lower degree of variation compared to alpha=0.7. - makes sense since we are closer to searching all branches with higher alpha.
 
-#### Soft- Margin SVM
+#### Soft- Margin SVM 
 
 ```{r}
 
