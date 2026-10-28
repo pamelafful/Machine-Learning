@@ -564,6 +564,144 @@ avg_win_rate_3=mean(win);avg_win_rate_3
 
 a\)
 
+```{r,mc_search}
+
+# Define game status
+rm(list = ls())
+
+#===============================================================================
+# Populate the state matrix
+#===============================================================================
+S = matrix(0,9,8)
+# Row Sums:
+S[1:3,1] = 1
+S[4:6,2] = 1
+S[7:9,3] = 1
+# Col Sums:
+S[c(1,4,7),4] = 1
+S[c(2,5,8),5] = 1
+S[c(3,6,9),6] = 1
+# Diag Sums
+S[c(1,5,9),7] = 1
+S[c(3,5,7),8] = 1
+
+
+
+rho = function(m,S) 
+{
+  m = matrix(m,ncol = 1)
+  player1  = any(t(m)%*%S == -3) # player X has won along any of the rows/col
+  player2  = any(t(m)%*%S == +3) # player O has won along any of the rows/col
+  m_1      = (m == -1) # player X entries on the board index /vector of booleans/ 1s an 0s
+  m_2      = (m == +1) # player O entries on the board index /vector of booleans/ 1s an 0s
+  tie      = sum((t(m_1)%*%S>0)*(t(m_2)%*%S>0)) == 8 # check for draw
+  winner   = c(-1,0,+1)[c(player1,tie,player2)] # indicate what game outcome is 
+  terminal = player1|tie|player2 # check if game HAS ended die to the above conditions, returns FALSE if not
+  ret      = list(terminal = terminal,winner = winner)
+  return(ret)
+}
+
+m0 = as.matrix(c(1,1,-1,0,0,0,0,0,-1)) # current game board/flattened
+# matrix(m,3,3,byrow = TRUE) # 
+# rho(m,S)
+# 
+# m = as.matrix(c(1,1,-1,0,0,-1,0,0,-1)) 
+# matrix(m,3,3,byrow = TRUE)
+# rho(m,S)
+# 
+# Mofified game tree
+game_tree_mod= function(m,k,n_moves,n_sim=1,strict=T) # n_moves- given mumber of moves from present board,m
+  # strict modifies if the game in won in exaxtly n moves (=True) or up to n moves (=False)
+{
+	g = c()#rep(NA, nsim) # initialize length of g
+	
+	for(sim in 1:n_sim){
+	x=m
+	game_state = rho(x,S)
+	
+	if((game_state$terminal)|(n_moves<=0))
+	{
+		 g = c(g,game_state$winner)
+		 return(g)
+	}else{
+		index_positions = which(m == 0) # open slot on the game board/ vector of open 
+
+		for(i in 1:n_moves)
+		{
+		  x=m
+		# pick next position randomly from uniform distribution from open positions
+			picked_index=index_positions[i]#sample(index_positions,1)
+			
+			x[picked_index] = k # player's turn
+			
+			if((strict==F && rho(x,S)$terminal) ){ #at most n_move condition 
+			  return(g)
+			  break
+			}else{
+			g  =c(g, game_tree_mod(x,-1*k,n_moves-1,n_sim=1) )
+			}
+			
+		}
+		}
+		return(g)
+	}
+	}
+
+
+#Test the above
+# game statuses for 
+
+m0=as.matrix(rep(0,9))
+game_tree_mod(m0,-1,8,strict=F)
+
+
+```
+
+```{r,n_moves_5}
+
+# Number wins in 5 moves
+m0=as.matrix(rep(0,9))# open board
+
+
+game_Ts_5=game_tree_mod(m0,1,5,strict=T)
+num_Ts_5=length(game_Ts_5)
+num_wins_5=length(which(game_Ts_5!=0))
+num_wins_5;length(game_Ts_5) # player 1 wins all the time if moves are constrained to 5 in total, 12 wins across trajectories
+
+```
+
+```{r,n_moves_8}
+m0=as.matrix(rep(0,9))# open board
+
+game_Ts_8=game_tree_mod(m0,1,8,strict=T)
+num_Ts_8=length(game_Ts_8)
+num_wins_8=length(which(game_Ts_8!=0))
+num_wins_8;length(game_Ts_8) ;num_wins_8/length(game_Ts_8)
+
+# players 89% of the time when moves are constrained to 8 excatly
+# Player one vs player 2:
+length(which(game_Ts_8==1));length(which(game_Ts_8==-1))
+# player 1 wins 10.5K times, player 2 wines 9K times
+```
+
+```{r,n_moves_up_to_8}
+
+m0=as.matrix(rep(0,9))# open board
+game_Ts_atmost_8=game_tree_mod(m0,1,8,strict=F)
+num_Ts_atmost_8=length(game_Ts_atmost_8)
+num_wins_atmost_8=length(which(game_Ts_atmost_8!=0))
+num_wins_8;length(game_Ts_atmost_8) ;num_wins_8/length(game_Ts_8)
+length(which(game_Ts_atmost_8==1));length(which(game_Ts_atmost_8==-1))
+# Same as before :()
+# better to be starting 
+```
+
+b\)
+
+```{r}
+
+```
+
 ```{r,plot_check}
 # plot a circle in r
 #set.seed(123)
