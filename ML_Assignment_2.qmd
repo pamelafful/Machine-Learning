@@ -71,8 +71,8 @@ library(tidyverse)
 library(knitr)
 library(ggplot2)
 library(reshape2)
-
-
+library('quadprog')
+library(e1071)
 ```
 
 # Drone Escape
@@ -922,16 +922,114 @@ G_all %>% ggplot(aes(y=Tie_Freq,col=alpha))+
 
 Key Obs: Median Freq for alpha=0.7 much closer to the true relative freq. Tighter spread across the median- lower degree of variation compared to alpha=0.7. - makes sense since we are closer to searching all branches with higher alpha.
 
-#### Soft- Margin SVM 
+#### Soft- Margin SVM
 
-```{r}
+```{r,soft_marg_svm}
+
+# kernal function to use the polynomial kernal trick
+KK = function(X1,X2)
+ {
+     return((cf+gm*t(X1)%*%X2)^dg)
+}
+
+my_svm=function(y,X,poly,Cost=10000){ # poly- vector of polynomial arguments (coeff,const,order)
+
+  gm = poly[1] # coeff
+  cf = poly[2] #constant
+  dg = poly[3] # order of polynomial
+  N=dim(X)[1]
+  DD=matrix(0,N,N) 
+  
+  # Fill in D mat
+  for(i in 1:N)
+ {
+     for(j in 1:N)
+     {
+         DD[i,j] = y[i]*y[j]*KK(X[i,],X[j,]) # Second part of Lagragian  formulation yn*ym*zn*zm
+     }
+  }
+   eps = 5e-6
+   DD  = DD +eps*diag(N)
+
+  # Constraints LHS
+  cons_1=diag(N);dim(cons_1)#lower bound of inequlity alpha>0
+  cons_2=-diag(N);dim(cons_2)#upper bound of inequality aplha< C
+  const_3=matrix(y,ncol=1,nrow=N);dim(const_3) # equality constraint alpha%*%yn=0 
+  Amat = cbind(const_3,cons_1,cons_2);dim(Amat) # N rows, M constraints
+  d    =  matrix(1,N,1);dim(d) # coeffiencents of all alpha is 1, d in formulation 
+  
+  # RHS of constraints
+  rhs1=rep(0,N) # lower bound
+  rhs2=rep(-Cost,N)# upper bound
+  rhs3=0 # equality cons
+  b0=c(rhs3,rhs1,rhs2)
+  bvec=b0 # RHS
+  
+  # Solve the opt problem
+   res = solve.QP(DD, d, Amat, bvec, meq=1, factorized=FALSE)
+   a   = res$solution 
+  
+   # Get wieghts
+    # Recover the model:
+
+     pad.a= round(a,3)
+     wh = which.max(a) #
+     
+     # Find the ws:
+     ww = t(a*y)%*%X # work back the wieghts/ X be substituted by the kernel val
+     intercept = 1/y[wh]-sum(a*y*KK(X[wh,],t(X))) # get intercept back
+     
+      T1 = rep(0,N) 
+      for(i in 1:N)
+      {
+        T1[i] = sum(a*y*KK(X[i,],t(X))) # matrix to get predictions/plane
+      }
+
+       yhat = sign(T1+intercept[1]) 
+       
+       # return list of a,weights,intercept,yhat
+       ret=list(alphas=pad.a,ww=ww,intercept=intercept,yhat=yhat) 
+  
+      return(ret)
+}
 
 
+# test the above 
+N  = 200
+
+ x1  = runif(N,-1,1)
+ x2  = runif(N,-1,1)
+ X   = cbind(x1,x2)
+ #y   = c(-1,1)[(0.2*x2+0.5*x1>=0.1)+1] # Encode responses as -1,1
+ y   = c(-1,1)[(x2^2+x1^2>=0.7)+1]
+
+ # Runs
+all_aphas=my_svm(y,X,c(1,1,2),Cost=10000)$alphas
+length(which(all_aphas!=0))
+
+```
+
+```{r,pla_read}
+
+# read in dataset
 ```
 
 a\)
 
-\`\`\`
+```{r,svm_com}
+
+poly=c(1,1,2)
+
+gm = poly[1] # coeff
+cf = poly[2] #constant
+dg = poly[3]
+
+dat    = data.frame(y = as.factor(y), x2=x2, x1 =x1)
+model  = svm(y~., data = dat, cost = 1000, kernel = 'polynomial', coef0 = cf, degree = dg, gamma = gm,scale =F)
+ 
+ 
+model$SV
+```
 
 ```{r,plot_check}
 # plot a circle in r
