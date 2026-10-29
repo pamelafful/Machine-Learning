@@ -79,49 +79,130 @@ library(e1071)
 
 a\)
 
-```{r,param_set_up,echo=T}
-set.seed(2023)
+```{r}
+#rm(list = ls())
+#========================================================================
+#                 1. Set up a game universe (Encoding)
+#========================================================================
+
+draw_objects = function(J)
+{  
+	 r_o       =  runif(J,0.3,1)
+   pi_vals   =  runif(J,-1,1)*pi
+   o1        =  r_o*cos(pi_vals)     # x-coordinates of objects
+   o2        =  r_o*sin(pi_vals)
+	 return(cbind(o1,o2))
+}
+draw_starts = function(N = 1)
+{
+	r_x      =  runif(N,0,0.25)
+	pi_x     =  runif(N,-1,1)*pi
+	xt       =  matrix(cbind(r_x*cos(pi_x),r_x*sin(pi_x)),nrow = N,byrow = TRUE)
+}
+
+set.seed(2024)
+
+J       =  50  
+objects = draw_objects(J)
+xt      = draw_starts()
+delt    = 0.025             # How big are the steps you can take?
+rad     = 0.05              # How close to an object before you crash?
+
+
+
+plot_game = function(xt,objects,rad,cols = 1)
+{
+  plot(objects[,2]~objects[,1],type = 'n', ylim = c(-1,1), xlim = c(-1,1))
+  symbols(objects[,1],objects[,2],circles = rep(rad,J),ylim = c(-1,1),xlim = c(-1,1),inches = FALSE,add = TRUE,bg = 'seagreen')
+  points(xt[,2]~xt[,1], pch = 16, cex = 1,col = cols)
+  pi_v = seq(-1,1,1/100)*pi
+  y_edge = sin(pi_v)
+  x_edge = cos(pi_v)
+  lines(y_edge~x_edge)
+  lines(c(0.25*y_edge)~c(0.25*x_edge),lty = 2)
+}
+
+plot_game(xt,objects,rad,'black')
+
+```
+
+```{r,param_set_up,echo=T,}
+set.seed(2024)
 
 outer_rad=1
 inner_rad=0.25
 
 J       =   50 # num trees/objects to avoid
-o1      =   runif(J,-outer_rad,outer_rad)  # x-coordinates of objects
-o2      =   runif(J,-outer_rad,outer_rad)  # y-coordinates of objects
+# o1      =   runif(J,-outer_rad,outer_rad)  # x-coordinates of objects
+# o2      =   runif(J,-outer_rad,outer_rad)  # y-coordinates of objects
+
+r_o       =  runif(J,0.3,1)
+pi_vals   =  runif(J,-1,1)*pi
+o1        =  r_o*cos(pi_vals)     # x-coordinates of objects
+o2        =  r_o*sin(pi_vals)
 objects =  cbind(o1,o2)
+
+
 inner_rad=0.25
 outer_rad=1
 delt    =  0.025            # How big are the steps you can take?
 rad     =  0.05 # How close to an object before you crash
-x0=matrix(cbind(runif(1,inner_rad**2,2*(inner_rad)**2),runif(1,inner_rad**2,2*(inner_rad)**2)),nrow=1,ncol=2)
 
+
+
+draw_starts = function(N = 1)
+{
+	r_x      =  runif(N,0,0.25)
+	pi_x     =  runif(N,-1,1)*pi
+	xt       =  matrix(cbind(r_x*cos(pi_x),r_x*sin(pi_x)),nrow = N,byrow = TRUE)
+	return(xt)
+}
 
 # Initialize xt such that it is in the starting position inside the inner circle
-
-           
+x0=draw_starts(1)
 
 
 game_status = function(xt, objects, rad, center = matrix(c(0,0), nrow=1, ncol=2), outer_rad = 1)
 {
   J        = nrow(objects)
   ones     = matrix(1, J, 1)
-  dists    = sqrt(rowSums((objects - ones %*% xt)^2))
+  dists    = sqrt(rowSums((objects - ones %*% xt)^2)) # distance btwn dron and ALL obj
   min_dist = min(dists)
 
   outer_circle_point_dist = sqrt(sum((center - xt)^2))
 
   if (min_dist < rad) {
-    status = -1                      # hit a tree = loss
+    status = -1                      # hit a tree/obj
   } else if (outer_circle_point_dist > outer_rad) {
-    status = 1                       # escaped = win
+    status = 1                       # escaped
   } else {
-    status = 0                       # keep flying
+    status = 0                       # keep going
   }
 
   list(status = status, closest = objects[which.min(dists), , drop = FALSE], min_dist = min_dist)
 }
 
-game_status(x0, objects, rad, center = matrix(c(0,0), nrow=1, ncol=2), outer_rad = 1)
+#game_status(x0, objects, rad, center = matrix(c(0,0), nrow=1, ncol=2), outer_rad = 1)
+
+
+
+#Alt Initializations
+# outer_rad=1
+# inner_rad=0.25
+# 
+# J       =   50 # num trees/objects to avoid
+# o1      =   runif(J,-outer_rad,outer_rad)  # x-coordinates of objects
+# o2      =   runif(J,-outer_rad,outer_rad)  # y-coordinates of objects
+# objects =  cbind(o1,o2)
+# inner_rad=0.25
+# outer_rad=1
+# delt    =  0.025            # How big are the steps you can take?
+# rad     =  0.05 # How close to an object before you crash
+# x0=matrix(cbind(runif(1,inner_rad**2,2*(inner_rad)**2),runif(1,inner_rad**2,2*(inner_rad)**2)),nrow=1,ncol=2)
+
+
+# Initialize xt such that it is in the starting position inside the inner circle
+
 ```
 
 #### b) Experimental Setup 1
@@ -130,51 +211,52 @@ game_status(x0, objects, rad, center = matrix(c(0,0), nrow=1, ncol=2), outer_rad
 set.seed(2024)
 
 
-# Initialize/Arrange object st they lie in outer circle/inner circle
-
-
-
 p     = 2
 q     = 2
-nodes =2
-npars = p*nodes+nodes*q+nodes+q # total num param
+nodes =c(3,3)
+npars = p*nodes[1]+nodes[1]*nodes[2]*+nodes[2]*q+nodes[1]+nodes[2]+q # total num param
 theta_rand = runif(npars,-1,1)
 
-####################################################
+#####################NN MOdel##############################
 
-# 3-3 NN to control drone movements
-model = function(xt,theta,nodes)
+model = function(xt, theta, nodes = c(3,3))
 {
   # Infer dimensions:
-  N = dim(xt)[1] # input #features/cords
-   p = dim(xt)[2] # length of weight vect
-   q = 2 # output steps
-   dims = c(p,nodes,q)
-  
-   # Populate weight and bias matrices for neural net:
-   index = 1:(dims[1]*dims[2])
-   W1    = matrix(theta[index],dims[1],dims[2])
-   index = max(index)+1:(dims[2]*dims[3])
-   W2    = matrix(theta[index],dims[2],dims[3])
-   index = max(index)+1#:(dims[2]*dims[3])
+  N = dim(xt)[1]   
+  p = dim(xt)[2]   # number of input features/coords
+  q = 2            # output steps
+  dims = c(p, nodes, q)   # p -> 3 -> 3 -> 2
 
+  # Populate weight matrices:
+  index = 1:(dims[1]*dims[2])
+  W1    = matrix(theta[index], dims[1], dims[2])
+  index = max(index) + 1:(dims[2]*dims[3])
+  W2    = matrix(theta[index], dims[2], dims[3])
+  index = max(index) + 1:(dims[3]*dims[4])
+  W3    = matrix(theta[index], dims[3], dims[4])
 
-   b1    = matrix(theta[index],dims[2],1)
-   index = max(index)+1
-   b2    = matrix(theta[index],dims[3],1)
+  # Populate bias vectors:
+  index = max(index) + 1:dims[2]
+  b1    = matrix(theta[index], dims[2], 1)
+  index = max(index) + 1:dims[3]
+  b2    = matrix(theta[index], dims[3], 1)
+  index = max(index) + 1:dims[4]
+  b3    = matrix(theta[index], dims[4], 1)
 
-   ones    = matrix(1,N,1)
-   a0      = t(xt)
-   
-   # Evaluate the updating equation in matrix form
-   a1 = tanh(t(W1)%*%a0+b1%*%t(ones)) # hidden layer 1
-   a2 = tanh(t(W2)%*%a1+b2%*%t(ones)) # output layer
-   #a2 = tanh(t(W3)%*%a1+b2%*%t(ones)) 
+  ones = matrix(1, N, 1)
+  a0   = t(xt)
 
-   # Return a list of relevant objects:
-   return(list(a2 = matrix(a2,ncol=2,nrow=1) )) # output layer pred
-   #
+  # Evaluate the updating equation in matrix form
+  a1 = tanh(t(W1) %*% a0 + b1 %*% t(ones))   # hidden layer 1
+  a2_hidd = tanh(t(W2) %*% a1 + b2 %*% t(ones))   # hidden layer 2
+  a3 = tanh(t(W3) %*% a2_hidd + b3 %*% t(ones))   # output layer
+
+  # Return a list of relevant objects:
+  return(list(a2 = matrix(a3, ncol = 2, nrow = 1)))
 }
+
+
+
 
 ###############Test the above####################
 
@@ -211,6 +293,7 @@ plot_game = function(xt,objects,rad,center=matrix(c(0,0),nrow=1,ncol=2),inner_ra
 
 #######################################
 
+draw_starts(100)
 # play a single game
 
 play_a_game = function(xt,delt,objects,rad,theta,plt = F,trace = TRUE,nodes,inner_rad=0.25,outer_rad=1)
@@ -255,14 +338,14 @@ play_a_game = function(xt,delt,objects,rad,theta,plt = F,trace = TRUE,nodes,inne
   return(list(k = k, status = res_status$status,xt= xt,trajectory = trajectory,dmin=dmin_final))
 }
 
-#play_a_game(x0+0.0045,delt,objects,rad,theta_opt,nodes=2,plt = F)
+#play_a_game(x0+0.0045,delt,objects,rad,theta_rand,nodes=nodes,plt = F)
 
 
 
 ############# Obj func
 play_T_games = function(theta) # This is our obj function!
 {
-  nodes=2;inner_rad_in=0.25;outer_rad_in=1;T_games=100;J=50
+  inner_rad_in=0.25;outer_rad_in=1;T_games=100;J=50
   
 	 # num trees/objects to avoid
   score=0
@@ -270,22 +353,46 @@ play_T_games = function(theta) # This is our obj function!
 	
 	for(i in 1:T_games)
 	{
-	 
-	o1      =   runif(J,-outer_rad,outer_rad)  # x-coordinates of objects
-  o2      =   runif(J,-outer_rad,outer_rad)  # y-coordinates of objects
-  objects =  cbind(o1,o2)
-	#score = 0
+  objects =  objects # keeo constant for now
  #starting position
-    xt=matrix(cbind(runif(1,-inner_rad,inner_rad),runif(1,-inner_rad,-inner_rad)),nrow=1,ncol=2)
-   res_play = play_a_game(xt,delt,objects,rad,theta,plt = FALSE,trace = FALSE,nodes,inner_rad=inner_rad_in,outer_rad=outer_rad_in)
-   score    = score+(res_play$status==+1) # number of times when we got to the other side
-   #print(paste0('T: ',i,'Score: ',score,'res: ',res_play$status))
+    xt_try=draw_starts(1)
+   
+    #apply across x_try
+   res_play =play_a_game(xt,delt,objects,rad,theta,plt = FALSE,trace = FALSE,nodes=c(3,3),inner_rad=inner_rad_in,outer_rad=outer_rad_in)$status
+   score  = score+(res_play==+1) # number of times when we got to the other side
 	}
   return(score/T_games) # objective to maximise
 }
 
+
+# Alternative Obj
+# play_T_games = function(theta) # This is our obj function!
+# {
+#   nodes=2;inner_rad_in=0.25;outer_rad_in=1;T_games=100;J=50
+#   
+# 	 # num trees/objects to avoid
+#   score=0
+# 
+# 	
+# 	for(i in 1:T_games)
+# 	{
+# 	 
+# 	o1      =   runif(J,-outer_rad,outer_rad)  # x-coordinates of objects
+#   o2      =   runif(J,-outer_rad,outer_rad)  # y-coordinates of objects
+#   objects =  cbind(o1,o2)
+# 	#score = 0
+#  #starting position
+#     xt=matrix(cbind(runif(1,-inner_rad,inner_rad),runif(1,-inner_rad,-inner_rad)),nrow=1,ncol=2)
+#    res_play = play_a_game(xt,delt,objects,rad,theta,plt = FALSE,trace = FALSE,nodes,inner_rad=inner_rad_in,outer_rad=outer_rad_in)
+#    score    = score+(res_play$status==+1) # number of times when we got to the other side
+#    #print(paste0('T: ',i,'Score: ',score,'res: ',res_play$status))
+# 	}
+#   return(score/T_games) # objective to maximise
+# }
+
+
 ########################test the above
-#play_T_games(theta_rand) 
+play_T_games(theta_rand) 
 
 
 
@@ -300,16 +407,16 @@ nodes=2
 
 
 library('GA')
-# GA <- ga(type   = 'real-valued',
-# 	      fitness = play_T_games, # used here to get the optimal theta
-# 	      lower   = rep(-10,npars), # lower bound vector
-# 	      upper   = rep(+10,npars), # upper bound vect
-# 	      popSize = 100,
-# 	      maxiter = 200) # nr generations
+GA <- ga(type   = 'real-valued',
+	      fitness = play_T_games, # used here to get the optimal theta
+	      lower   = rep(-10,npars), # lower bound vector
+	      upper   = rep(+10,npars), # upper bound vect
+	      popSize = 100,
+	      maxiter = 200) # nr generations
 
 
 
-#saveRDS(GA,file='ga_results.rds')
+saveRDS(GA,file='ga_results2.rds')
 GA=readRDS('ga_results.rds')
 plot(GA)
 # note  @solution to get optimal thet
@@ -335,11 +442,9 @@ theta=
 win = c()
 for(i in 1:100)
 {
-  o1      =   runif(J,-outer_rad,outer_rad)  # x-coordinates of objects
-  o2      =   runif(J,-outer_rad,outer_rad) 
-  objects =  cbind(o1,o2)
+  # Keep objects constant for now
+  objects =  objects
   xt_try    = matrix(runif(2,-inner_rad,inner_rad),nrow=1,ncol=2)
-  # plot_game(xt_try,objects,rad,center=matrix(c(0,0),nrow=1,ncol=2),inner_rad=0.25,outer_rad=1)
   res_final = play_a_game(xt_try,delt,objects,rad,theta_opt,plt = TRUE,trace = TRUE,nodes,inner_rad=0.25,outer_rad=1)
   lines(res_final$trajectory[2,]~res_final$trajectory[1,])
   win[i] = (res_final$status==1)
@@ -927,12 +1032,12 @@ Key Obs: Median Freq for alpha=0.7 much closer to the true relative freq. Tighte
 ```{r,soft_marg_svm}
 
 # kernal function to use the polynomial kernal trick
-KK = function(X1,X2)
+KK = function(X1,X2,cf,gm,dg)
  {
      return((cf+gm*t(X1)%*%X2)^dg)
 }
 
-my_svm=function(y,X,poly,Cost=10000){ # poly- vector of polynomial arguments (coeff,const,order)
+my_svm=function(y,X,poly,Cost=10000){ # poly- vector of polynomial arguments c(gm,cf,dg)
 
   gm = poly[1] # coeff
   cf = poly[2] #constant
@@ -944,8 +1049,9 @@ my_svm=function(y,X,poly,Cost=10000){ # poly- vector of polynomial arguments (co
   for(i in 1:N)
  {
      for(j in 1:N)
+
      {
-         DD[i,j] = y[i]*y[j]*KK(X[i,],X[j,]) # Second part of Lagragian  formulation yn*ym*zn*zm
+         DD[i,j] = y[i]*y[j]*KK(X[i,],X[j,],cf=cf,gm=gm,dg=dg) # Second part of Lagragian  formulation yn*ym*zn*zm
      }
   }
    eps = 5e-6
@@ -967,51 +1073,52 @@ my_svm=function(y,X,poly,Cost=10000){ # poly- vector of polynomial arguments (co
   
   # Solve the opt problem
    res = solve.QP(DD, d, Amat, bvec, meq=1, factorized=FALSE)
-   a   = res$solution 
-  
+   a   = res$solution
+
    # Get wieghts
     # Recover the model:
 
      pad.a= round(a,3)
      wh = which.max(a) #
-     
+
      # Find the ws:
      ww = t(a*y)%*%X # work back the wieghts/ X be substituted by the kernel val
-     intercept = 1/y[wh]-sum(a*y*KK(X[wh,],t(X))) # get intercept back
-     
-      T1 = rep(0,N) 
+     intercept = 1/y[wh]-sum(a*y*KK(X[wh,],t(X),cf=cf,gm=gm, dg=dg)) # get intercept back
+
+      T1 = rep(0,N)
       for(i in 1:N)
       {
-        T1[i] = sum(a*y*KK(X[i,],t(X))) # matrix to get predictions/plane
+        T1[i] = sum(a*y*KK(X[i,], t(X), cf=cf, gm=gm, dg=dg)) # matrix to get predictions/plane
       }
 
-       yhat = sign(T1+intercept[1]) 
-       
+       yhat = sign(T1+intercept[1])
+
        # return list of a,weights,intercept,yhat
-       ret=list(alphas=pad.a,ww=ww,intercept=intercept,yhat=yhat) 
+       ret=list(alphas=pad.a,ww=ww,intercept=intercept,yhat=yhat)
   
       return(ret)
 }
 
 
-# test the above 
-N  = 200
-
- x1  = runif(N,-1,1)
- x2  = runif(N,-1,1)
- X   = cbind(x1,x2)
- #y   = c(-1,1)[(0.2*x2+0.5*x1>=0.1)+1] # Encode responses as -1,1
- y   = c(-1,1)[(x2^2+x1^2>=0.7)+1]
-
- # Runs
-all_aphas=my_svm(y,X,c(1,1,2),Cost=10000)$alphas
-length(which(all_aphas!=0))
-
 ```
 
 ```{r,pla_read}
+plm_data=read.delim("PLA_Dynamics", header = TRUE,sep='')
 
-# read in dataset
+y=plm_data$Y
+x1=plm_data$X1
+x2=plm_data$X2
+X=cbind(x1,x2)
+poly=c(1,1,2)
+
+# Test my_svm
+res=my_svm(y,X,poly,Cost=10000)
+#SV alpha coeff!=0
+# Nr of SV
+my_sv_coeff=which(round(res$alpha,3)>1e-6) #alpha greater than tolerance
+dim(X[my_sv_coeff,])
+
+
 ```
 
 a\)
@@ -1020,15 +1127,28 @@ a\)
 
 poly=c(1,1,2)
 
+
 gm = poly[1] # coeff
 cf = poly[2] #constant
-dg = poly[3]
+dg = poly[3] # order of polynomial
 
-dat    = data.frame(y = as.factor(y), x2=x2, x1 =x1)
-model  = svm(y~., data = dat, cost = 1000, kernel = 'polynomial', coef0 = cf, degree = dg, gamma = gm,scale =F)
+model  = svm(X,y, cost = 10000, kernel = 'polynomial',  coef0 = cf, degree = dg, gamma = gm,scale =F,type="C-classification")
  
  
-model$SV
+svm_Sv=model$SV
+svm_Sv
+```
+
+```{r,sv_plots}
+# MY SVs
+a   = res$alpha[my_sv_coeff]
+plot(x2~x1,pch = c(1,16)[(y+1)/2+1])
+points(x2[my_sv_coeff]~x1[my_sv_coeff], pch = 1,col = 'red',cex=2)
+ 
+# SVM SVs
+plot(x2~x1,pch = c(1,16)[(y+1)/2+1])
+points(svm_Sv[,'x1']~svm_Sv[,'x2'], pch = 1,col = 'blue',cex=2)
+
 ```
 
 ```{r,plot_check}
