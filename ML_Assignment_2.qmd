@@ -207,9 +207,22 @@ game_status = function(xt, objects, rad, center = matrix(c(0,0), nrow=1, ncol=2)
 
 #### b) Experimental Setup 1
 
-```{r}
+```{r,game_exp_1,echo=T}
+
+#| layout-ncol: 2
+#| fig-subcap: 
+#|   - "GA Parameter Trace Plot"
+#|   - "Trajectories over 100 initial positions"
+
 set.seed(2024)
 
+draw_starts = function(N = 1)
+{
+	r_x      =  runif(N,0,0.25)
+	pi_x     =  runif(N,-1,1)*pi
+	xt       =  matrix(cbind(r_x*cos(pi_x),r_x*sin(pi_x)),nrow = N,byrow = TRUE)
+	return(xt)
+}
 
 p     = 2
 q     = 2
@@ -257,11 +270,6 @@ model = function(xt, theta, nodes = c(3,3))
 
 
 
-
-###############Test the above####################
-
-#model(x0,theta_rand,nodes)
-
 #################### plot game function
 plot_game = function(xt,objects,rad,center=matrix(c(0,0),nrow=1,ncol=2),inner_rad=0.25,outer_rad=1)
 {
@@ -289,11 +297,9 @@ plot_game = function(xt,objects,rad,center=matrix(c(0,0),nrow=1,ncol=2),inner_ra
   abline(h = c(-1,1), lty = 3,col = c('black','black'), lwd = 2)
 }
 
-#plot_game(x0,objects,rad,plt = T)
 
 #######################################
 
-draw_starts(100)
 # play a single game
 
 play_a_game = function(xt,delt,objects,rad,theta,plt = F,trace = TRUE,nodes,inner_rad=0.25,outer_rad=1)
@@ -365,39 +371,12 @@ play_T_games = function(theta) # This is our obj function!
 
 
 
-# Alternative Obj
-# play_T_games = function(theta) # This is our obj function!
-# {
-#   nodes=2;inner_rad_in=0.25;outer_rad_in=1;T_games=100;J=50
-#   
-# 	 # num trees/objects to avoid
-#   score=0
-# 
-# 	
-# 	for(i in 1:T_games)
-# 	{
-# 	 
-# 	o1      =   runif(J,-outer_rad,outer_rad)  # x-coordinates of objects
-#   o2      =   runif(J,-outer_rad,outer_rad)  # y-coordinates of objects
-#   objects =  cbind(o1,o2)
-# 	#score = 0
-#  #starting position
-#     xt=matrix(cbind(runif(1,-inner_rad,inner_rad),runif(1,-inner_rad,-inner_rad)),nrow=1,ncol=2)
-#    res_play = play_a_game(xt,delt,objects,rad,theta,plt = FALSE,trace = FALSE,nodes,inner_rad=inner_rad_in,outer_rad=outer_rad_in)
-#    score    = score+(res_play$status==+1) # number of times when we got to the other side
-#    #print(paste0('T: ',i,'Score: ',score,'res: ',res_play$status))
-# 	}
-#   return(score/T_games) # objective to maximise
-# }
-
-
 
 
 
 
 ###################GA function to get weights################
 # Use GA function 
-#nodes=3
 
 library('GA')
 # GA <- ga(type   = 'real-valued',
@@ -409,118 +388,193 @@ library('GA')
 # 
 
 
-saveRDS(GA,file='ga_results2.rds')
+#saveRDS(GA,file='ga_results2.rds')
 GA=readRDS('ga_results2.rds')
 plot(GA)
 # note  @solution to get optimal thet
 theta_opt=GA@solution[1,]
 
 
-# Draw a hundered x_try aand report on success
-
 tries=draw_starts(100)
+center=c(0,0)
 
+plot(NULL, xlim=c(-2,2),ylim=c(-2,2),xlab='position coord 1',ylab='position coord 2',main='Trace Plot for 100 Trajectories: Fixed Tree Configuration')
+
+  thetas = seq(0, 2 * pi, length.out = 200)
+
+  x_inner = center[1] + inner_rad * cos(thetas)
+  y_inner = center[2] + inner_rad * sin(thetas)
+
+
+  x_outer = center[1] + outer_rad * cos(thetas)
+  y_outer = center[2] + outer_rad * sin(thetas)
+
+  
+  lines(x_outer, y_outer, col = "purple", lwd = 2)
+  lines(x_inner, y_inner, col = "blue", lwd = 2)
+  abline(h = 0, v = 0, col = "gray", lty = 2)
+  
+  # points(xt[,2]~xt[,1],pch = 9,col = 'black')
+  points(objects[,1],objects[,2],pch=19,col='darkgreen')
+ 
+  
 # play the game 100 times with the optimal theta
 scores=c() # store results of each game
 for(i in 1:dim(tries)[1]){
-  xt=tries[i,]
-  res=play_a_game(xt,delt,objects,rad,theta_opt,plt = F,trace = TRUE,nodes=c(3,3),inner_rad=0.25,outer_rad=1)$score
-  score=c(score,res)
+  xt_i=matrix(tries[i,],nrow=1,ncol=2)
+  res=play_a_game(xt_i,delt,objects,rad,theta=theta_opt,plt = F,trace = TRUE,nodes=c(3,3),inner_rad=0.25,outer_rad=1)
+ scores=c(scores,res$status)
+  traj= res$trajectory
+  colr=ifelse(res$status==1,'lightgreen','brown') # green if succ
+  lines(traj[1,]~traj[2,],lwd=1.5,col=colr)
 
   }
 
+# %Successful exits
+sr=(length(which(scores==1))/length(scores))*100 #98%
 
-length(theta_rand);length(t(theta_opt))
+text(x = 1.5, y = 1.5, labels = paste("Succ Rate:~",round(sr,3),'%'), col = "darkblue", cex = 1.2, font = 2)
+
+
+
+
 ```
 
 ```{r,new_draw}
 
+# New Trees
+
 outer_rad=1
 inner_rad=0.25
 
-J       =   50 # num trees/objects to avoid
-o1      =   runif(J,-outer_rad,outer_rad)  # x-coordinates of objects
-o2      =   runif(J,-outer_rad,outer_rad)  # y-coordinates of objects
-objects =  cbind(o1,o2)
-inner_rad=0.25
+J       =   50
 
-x0_start=matrix(runif(2,-inner_rad,inner_rad),nrow=1,ncol=2)
-theta=  
-  
-win = c()
-for(i in 1:100)
-{
-  # Keep objects constant for now
-  objects =  objects
-  xt_try    = matrix(runif(2,-inner_rad,inner_rad),nrow=1,ncol=2)
-  res_final = play_a_game(xt_try,delt,objects,rad,theta_opt,plt = TRUE,trace = TRUE,nodes,inner_rad=0.25,outer_rad=1)
-  lines(res_final$trajectory[2,]~res_final$trajectory[1,])
-  win[i] = (res_final$status==1)
+set.seed(124)
+
+draw_objects = function(J)
+{  
+	 r_o       =  runif(J,0.3,1)
+   pi_vals   =  runif(J,-1,1)*pi
+   o1        =  r_o*cos(pi_vals)     # x-coordinates of objects
+   o2        =  r_o*sin(pi_vals)
+	 return(cbind(o1,o2))
 }
-avg_win_rate_1=mean(win)
 
 
-avg_win_rate_1
+new_obj=draw_objects(J)
+
+win = c()
+
+
+tries=draw_starts(100)
+center=c(0,0)
+
+plot(NULL, xlim=c(-2,2),ylim=c(-2,2),xlab='position coord 1',ylab='position coord 2',main='Trace Plot for 100 Trajectories: New Tree Config')
+
+  thetas = seq(0, 2 * pi, length.out = 200)
+
+  x_inner = center[1] + inner_rad * cos(thetas)
+  y_inner = center[2] + inner_rad * sin(thetas)
+
+
+  x_outer = center[1] + outer_rad * cos(thetas)
+  y_outer = center[2] + outer_rad * sin(thetas)
+
+  
+  lines(x_outer, y_outer, col = "purple", lwd = 2)
+  lines(x_inner, y_inner, col = "blue", lwd = 2)
+  abline(h = 0, v = 0, col = "gray", lty = 2)
+  
+  # points(xt[,2]~xt[,1],pch = 9,col = 'black')
+  points(new_obj[,1],new_obj[,2],pch=19,col='darkgreen')
+ 
+  
+# play the game 100 times with the optimal theta
+scores=c() # store results of each game
+for(i in 1:dim(tries)[1]){
+  xt_i=matrix(tries[i,],nrow=1,ncol=2)
+  res=play_a_game(xt_i,delt,new_obj,rad,theta=theta_opt,plt = F,trace = TRUE,nodes=c(3,3),inner_rad=0.25,outer_rad=1)
+ scores=c(scores,res$status)
+  traj= res$trajectory
+  colr=ifelse(res$status==1,'lightgreen','brown') # green if succ
+  lines(traj[1,]~traj[2,],lwd=1.5,col=colr)
+
+  }
+
+# %Successful exits
+sr=round( (length(which(scores==1))/length(scores)),3)
+
+text(x = 1.5, y = 1.5, labels = paste("Succ Rate:~",sr), col = "darkblue", cex = 1.2, font = 2)
+
+
+
+
 
 ```
 
-iii\) \*comeback\
+iii\) Comments for the first 2 experiments:
+
+-   The drone has a near perfect success rate at escaping the forest and the learned weights have learnt how to get around a specific configuration of forest across starting positions
+
+-   However, with a new configuration of trees, the drones success rate plummets to 0, indicating that the initial model/weights were highly overfit for a specific distributions of tress across the field. The model has not learnt a general pattern of how to escape the field (across configurations).\
 
 #### c) Experimental Setup 2
 
 i\)
 
-```{r}
+```{r,mod_nn,echo=T,eval=T}
 
-d_min0=play_a_game(xt_try,delt,objects,rad,theta_opt,plt = TRUE,trace = TRUE,nodes,inner_rad=0.25,outer_rad=1)$dmin
-r=rad
+# # Test
+# x0
+# d_min0=play_a_game(x0,delt,objects,rad,theta_opt,plt = TRUE,trace = TRUE,nodes,inner_rad=0.25,outer_rad=1)$dmin
+# r=rad
+# 
+# add_arg0=matrix((1/(d_min0-r)),ncol=1,nrow=1)
 
-add_arg0=matrix((1/(d_min0-r)),ncol=1,nrow=1)
+# Modified NN
 
-cbind(x0,add_arg0)
-
-
-model_2 = function(xt_input,theta,nodes,add_arg) #add_arg= 1/(dmin-r)
+model_2 = function(xt_input, theta, nodes = c(3,3),add_arg) #add_arg= 1/(dmin-r)
 {
   xt=cbind(xt_input,add_arg)
-   N = dim(xt)[1] # input #features/cords
-   p = dim(xt)[2] # length of weight vect
-   q = 2 # output steps
-   dims = c(p,nodes,q)
-  
-   # Populate weight and bias matrices for neural net:
-   index = 1:(dims[1]*dims[2])
-   W1    = matrix(theta[index],dims[1],dims[2])
-   index = max(index)+1:(dims[2]*dims[3])
-   W2    = matrix(theta[index],dims[2],dims[3])
-   index = max(index)+1#:(dims[2]*dims[3])
+  # Infer dimensions:
+  N = dim(xt)[1]   
+  p = dim(xt)[2]   # number of input features/coords
+  q = 2            # output steps
+  dims = c(p, nodes, q)   # p -> 3 -> 3 -> 2
 
+  # Populate weight matrices:
+  index = 1:(dims[1]*dims[2])
+  W1    = matrix(theta[index], dims[1], dims[2])
+  index = max(index) + 1:(dims[2]*dims[3])
+  W2    = matrix(theta[index], dims[2], dims[3])
+  index = max(index) + 1:(dims[3]*dims[4])
+  W3    = matrix(theta[index], dims[3], dims[4])
 
-   b1    = matrix(theta[index],dims[2],1)
-   index = max(index)+1
-   b2    = matrix(theta[index],dims[3],1)
+  # Populate bias vectors:
+  index = max(index) + 1:dims[2]
+  b1    = matrix(theta[index], dims[2], 1)
+  index = max(index) + 1:dims[3]
+  b2    = matrix(theta[index], dims[3], 1)
+  index = max(index) + 1:dims[4]
+  b3    = matrix(theta[index], dims[4], 1)
 
-   ones    = matrix(1,N,1)
-   a0      = t(xt)
-   
-   # Evaluate the updating equation in matrix form
-   a1 = tanh(t(W1)%*%a0+b1%*%t(ones)) # hidden layer 1
-   a2 = tanh(t(W2)%*%a1+b2%*%t(ones)) # output layer
-   #a2 = tanh(t(W3)%*%a1+b2%*%t(ones)) 
+  ones = matrix(1, N, 1)
+  a0   = t(xt)
 
-   # Return a list of relevant objects:
-   return(list(a2 = matrix(a2,ncol=2,nrow=1) )) # output layer pred
-   #return(list(a1=a1))
+  # Evaluate the updating equation in matrix form
+  a1 = tanh(t(W1) %*% a0 + b1 %*% t(ones))   # hidden layer 1
+  a2_hidd = tanh(t(W2) %*% a1 + b2 %*% t(ones))   # hidden layer 2
+  a3 = tanh(t(W3) %*% a2_hidd + b3 %*% t(ones))   # output layer
+
+  # Return a list of relevant objects:
+  return(list(a2 = matrix(a3, ncol = 2, nrow = 1)))
 }
 
-model_2(x0,theta_opt,nodes=nodes,add_arg0)
 
+# Modify play_a_game function
+# now includes d_min
 
-
-
-# Modify play a game function
-
-play_a_game_mod = function(xt,delt,objects,rad,theta,plt = F,trace = TRUE,nodes,inner_rad=0.25,outer_rad=1)
+play_a_game_mod = function(xt,delt,objects,rad,theta,plt = F,trace = TRUE,nodes=c(3,3),inner_rad=0.25,outer_rad=1)
 {
   k           =   1  # Count how many iterations
   xt          =   xt # Set the initial coordinate(s) for the drone.
@@ -566,32 +620,84 @@ play_a_game_mod = function(xt,delt,objects,rad,theta,plt = F,trace = TRUE,nodes,
   return(list(k = k, status = res_status$status,xt= xt,trajectory = trajectory,dmin_final=dmin_final))
 }
 
-
-play_a_game_mod(matrix(runif(2,-inner_rad,inner_rad), nrow=1,ncol=2),delt,objects,rad,theta_opt,nodes=2,plt = T)
+# Test for a single game
+#play_a_game_mod(x0,delt,objects,rad,theta_opt,nodes=c(3,3),plt = T)
 
 ```
 
 ii\)
 
-```{r,plot_mod}
+```{r,plot_exp_2}
 
 # Repeat plots
 
-win = c()
-for(i in 1:100)
-{
-  o1      =   runif(J,-outer_rad,outer_rad)  # x-coordinates of objects
-  o2      =   runif(J,-outer_rad,outer_rad) 
-  objects =  cbind(o1,o2)
-  xt_try    = matrix(runif(2,-inner_rad,inner_rad),nrow=1,ncol=2)
-  # plot_game(xt_try,objects,rad,center=matrix(c(0,0),nrow=1,ncol=2),inner_rad=0.25,outer_rad=1)
-  res_final = play_a_game_mod(xt_try,delt,objects,rad,theta_opt,plt = TRUE,trace = TRUE,nodes,inner_rad=0.25,outer_rad=1)
-  #lines(res_final$trajectory[2,]~res_final$trajectory[1,])
-  win[i] = (res_final$status==1)
+# New Trees
+
+outer_rad=1
+inner_rad=0.25
+
+J       =   50
+
+set.seed(324)
+
+draw_objects = function(J)
+{  
+	 r_o       =  runif(J,0.3,1)
+   pi_vals   =  runif(J,-1,1)*pi
+   o1        =  r_o*cos(pi_vals)     # x-coordinates of objects
+   o2        =  r_o*sin(pi_vals)
+	 return(cbind(o1,o2))
 }
-avg_win_rate_2=mean(win)
+
+
+new_obj=draw_objects(J)
+
+win = c()
+
+tries=draw_starts(100)
+center=c(0,0)
+
+plot(NULL, xlim=c(-2,2),ylim=c(-2,2),xlab='position coord 1',ylab='position coord 2',main='Trace Plot for 100 Trajectories: distance metric model')
+
+  thetas = seq(0, 2 * pi, length.out = 200)
+
+  x_inner = center[1] + inner_rad * cos(thetas)
+  y_inner = center[2] + inner_rad * sin(thetas)
+
+
+  x_outer = center[1] + outer_rad * cos(thetas)
+  y_outer = center[2] + outer_rad * sin(thetas)
+
+  
+  lines(x_outer, y_outer, col = "purple", lwd = 2)
+  lines(x_inner, y_inner, col = "blue", lwd = 2)
+  abline(h = 0, v = 0, col = "gray", lty = 2)
+  
+  # points(xt[,2]~xt[,1],pch = 9,col = 'black')
+  points(new_obj[,1],new_obj[,2],pch=19,col='darkgreen')
+ 
+  
+# play the game 100 times with the optimal theta
+scores=c() # store results of each game
+for(i in 1:dim(tries)[1]){
+  xt_i=matrix(tries[i,],nrow=1,ncol=2)
+  res=play_a_game_mod(xt_i,delt,new_obj,rad,theta=theta_opt,plt = F,trace = TRUE,nodes=c(3,3),inner_rad=0.25,outer_rad=1)
+ scores=c(scores,res$status)
+  traj= res$trajectory
+  colr=ifelse(res$status==1,'lightgreen','brown') # green if succ
+  lines(traj[1,]~traj[2,],lwd=1.5,col=colr)
+
+
+  }
+
+# %Successful exits
+sr=round( (length(which(scores==1))/length(scores)),3)
+
+text(x = 1.5, y = 1.5, labels = paste("Succ Rate:~",sr), col = "darkblue", cex = 1.2, font = 2)
 
 ```
+
+The model has an improved success rate of 17% for a new configuration of trees using the distance-augmented model (using the same optimized parameters). The model has adopted some general pattern of avoiding trees, although it still has some noticeable room for improvement.
 
 #### d) Experimental Setup 3
 
