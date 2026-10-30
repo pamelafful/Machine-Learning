@@ -338,7 +338,7 @@ play_a_game = function(xt,delt,objects,rad,theta,plt = F,trace = TRUE,nodes,inne
   return(list(k = k, status = res_status$status,xt= xt,trajectory = trajectory,dmin=dmin_final))
 }
 
-#play_a_game(x0+0.0045,delt,objects,rad,theta_rand,nodes=nodes,plt = F)
+#play_a_game(draw_starts(1),delt,objects,rad,theta_rand,nodes=c(3,3),plt = F)
 
 
 
@@ -356,13 +356,13 @@ play_T_games = function(theta) # This is our obj function!
   objects =  objects # keeo constant for now
  #starting position
     xt_try=draw_starts(1)
-   
     #apply across x_try
-   res_play =play_a_game(xt,delt,objects,rad,theta,plt = FALSE,trace = FALSE,nodes=c(3,3),inner_rad=inner_rad_in,outer_rad=outer_rad_in)$status
+   res_play =play_a_game(xt_try,delt,objects,rad,theta,plt = FALSE,trace = FALSE,nodes=c(3,3),inner_rad=inner_rad_in,outer_rad=outer_rad_in)$status
    score  = score+(res_play==+1) # number of times when we got to the other side
 	}
   return(score/T_games) # objective to maximise
 }
+
 
 
 # Alternative Obj
@@ -391,8 +391,7 @@ play_T_games = function(theta) # This is our obj function!
 # }
 
 
-########################test the above
-play_T_games(theta_rand) 
+
 
 
 
@@ -400,29 +399,38 @@ play_T_games(theta_rand)
 # Use GA function 
 #nodes=3
 
-xt=x0
-theta=theta_rand
-nodes=2
-
-
-
 library('GA')
-GA <- ga(type   = 'real-valued',
-	      fitness = play_T_games, # used here to get the optimal theta
-	      lower   = rep(-10,npars), # lower bound vector
-	      upper   = rep(+10,npars), # upper bound vect
-	      popSize = 100,
-	      maxiter = 200) # nr generations
-
+# GA <- ga(type   = 'real-valued',
+# 	      fitness = play_T_games, # used here to get the optimal theta
+# 	      lower   = rep(-10,npars), # lower bound vector
+# 	      upper   = rep(+10,npars), # upper bound vect
+# 	      popSize = 100,
+# 	      maxiter = 200) # nr generations
+# 
 
 
 saveRDS(GA,file='ga_results2.rds')
-GA=readRDS('ga_results.rds')
+GA=readRDS('ga_results2.rds')
 plot(GA)
 # note  @solution to get optimal thet
 theta_opt=GA@solution[1,]
-theta_opt
 
+
+# Draw a hundered x_try aand report on success
+
+tries=draw_starts(100)
+
+# play the game 100 times with the optimal theta
+scores=c() # store results of each game
+for(i in 1:dim(tries)[1]){
+  xt=tries[i,]
+  res=play_a_game(xt,delt,objects,rad,theta_opt,plt = F,trace = TRUE,nodes=c(3,3),inner_rad=0.25,outer_rad=1)$score
+  score=c(score,res)
+
+  }
+
+
+length(theta_rand);length(t(theta_opt))
 ```
 
 ```{r,new_draw}
