@@ -704,13 +704,12 @@ The model has an improved success rate of 17% for a new configuration of trees u
 ```{r,vary_tree_start}
 
  # modified to make a new draw and tree config
-play_a_game_mod2 = function(delt,rad,theta,plt = F,trace = TRUE,nodes,inner_rad=0.25,outer_rad=1)
+play_a_game_mod2 = function(delt,rad,theta,plt = F,trace = TRUE,nodes=c(3,3),inner_rad=0.25,outer_rad=1)
 {
+  J=50
   # random start
-  xt=matrix(cbind(runif(1,inner_rad**2,2*(inner_rad)**2),runif(1,inner_rad**2,2*(inner_rad)**2)),nrow=1,ncol=2)
-  o1      =   runif(J,-outer_rad,outer_rad)#runif(J,-outer_rad,outer_rad)  # x-coordinates of objects
-  o2      =  runif(J,-(outer_rad)**2,(outer_rad)**2)# runif(J,-outer_rad,outer_rad) 
-  objects =  cbind(o1,o2)
+  xt=draw_starts(1) # new random start 
+  objects =  objects=draw_objects(J)
   k           =   1  # Count how many iterations
   xt          =   xt # Set the initial coordinate(s) for the drone.
   trajectory = matrix(0,2,100) # store the the postions that the drone takes through out the game/how it moves
@@ -757,8 +756,42 @@ play_a_game_mod2 = function(delt,rad,theta,plt = F,trace = TRUE,nodes,inner_rad=
 }
 
 
-play_a_game_mod2(delt,rad,theta_opt,plt = T,trace = TRUE,nodes,inner_rad=0.25,outer_rad=1)
+# Results
+set.seed(46)
+plot(NULL, xlim=c(-2,2),ylim=c(-2,2),xlab='position coord 1',ylab='position coord 2',main='Trace Plot for 100 Trajectories: Variying Inital Starts and Tree Configs')
 
+  thetas = seq(0, 2 * pi, length.out = 200)
+
+  x_inner = center[1] + inner_rad * cos(thetas)
+  y_inner = center[2] + inner_rad * sin(thetas)
+
+
+  x_outer = center[1] + outer_rad * cos(thetas)
+  y_outer = center[2] + outer_rad * sin(thetas)
+
+  
+  lines(x_outer, y_outer, col = "purple", lwd = 2)
+  lines(x_inner, y_inner, col = "blue", lwd = 2)
+  abline(h = 0, v = 0, col = "gray", lty = 2)
+  
+  # points(xt[,2]~xt[,1],pch = 9,col = 'black')
+  
+# play the game 100 times with the optimal theta
+scores=c() # store results of each game
+for(i in 1:dim(tries)[1]){
+  res=play_a_game_mod2(delt,rad,theta=theta_opt,plt = F,trace = TRUE,nodes=c(3,3),inner_rad=0.25,outer_rad=1)
+ scores=c(scores,res$status)
+  traj= res$trajectory
+  colr=ifelse(res$status==1,'lightgreen','brown') # green if succ
+  lines(traj[1,]~traj[2,],lwd=1.5,col=colr)
+
+
+  }
+
+# %Successful exits
+sr=round( (length(which(scores==1))/length(scores)),3)
+
+text(x = 1.5, y = 1.5, labels = paste("Succ Rate:~",sr), col = "darkblue", cex = 1.2, font = 2)
 
 
 
@@ -766,20 +799,9 @@ play_a_game_mod2(delt,rad,theta_opt,plt = T,trace = TRUE,nodes,inner_rad=0.25,ou
 
 ```
 
-```{r,game_traj}
+The success rate has shown a better improvement across variations of the tree configurations and starting points, with a success rate of 26%. \*comeback
 
-win = c()
-for(i in 1:100)
-{
-  res_final=play_a_game_mod2(delt,rad,theta_opt,plt = T,trace = TRUE,nodes,inner_rad=0.25,outer_rad=1)
-
-  #lines(res_final$trajectory[2,]~res_final$trajectory[1,])
-  win[i] = (res_final$status==1)
-}
-avg_win_rate_3=mean(win);avg_win_rate_3
-```
-
-#### Question 2
+### Question 2
 
 a\)
 
@@ -837,51 +859,43 @@ rho = function(m,S)
   m_1      = (m == -1) # player X entries on the board index /vector of booleans/ 1s an 0s
   m_2      = (m == +1) # player O entries on the board index /vector of booleans/ 1s an 0s
   tie      = sum((t(m_1)%*%S>0)*(t(m_2)%*%S>0)) == 8 # check for draw
-  winner   = c(-1,0,+1)[c(player1,tie,player2)] # indicate what game outcome is 
-  terminal = player1|tie|player2 # check if game HAS ended die to the above conditions, returns FALSE if not
+  winner   = c(-1,0,+1,NA)[c(player1,tie,player2,NA)] # indicate what game outcome is 
+  terminal = player1|tie|player2 # check if game HAS ended tie to the above conditions, returns FALSE if not
   ret      = list(terminal = terminal,winner = winner)
   return(ret)
 }
 
-m0 = as.matrix(c(1,1,-1,0,0,0,0,0,-1)) # current game board/flattened
-# matrix(m,3,3,byrow = TRUE) # 
-# rho(m,S)
-# 
-# m = as.matrix(c(1,1,-1,0,0,-1,0,0,-1)) 
-# matrix(m,3,3,byrow = TRUE)
-# rho(m,S)
-# 
+# m0 = as.matrix(c(0,0,0,0,0,0,0,0,0)) # current game board/flattened
+# c(rho(m0,S)$winner ,1)
+
 # Mofified game tree
-game_tree_mod= function(m,k,n_moves,n_sim=1,strict=T) # n_moves- given mumber of moves from present board,m
-  # strict modifies if the game in won in exaxtly n moves (=True) or up to n moves (=False)
+game_tree_mod= function(m,k,n_moves,strict=F,n_sim=1) #n_moves=target moves
 {
-	g = c()#rep(NA, nsim) # initialize length of g
+	g = c()
 	
 	for(sim in 1:n_sim){
 	x=m
 	game_state = rho(x,S)
 	
-	if((game_state$terminal)|(n_moves<=0))
-	{
+	if(strict){
+	condition=(n_moves<=0)}else{ # exactly condition
+	  condition=((game_state$terminal)|(n_moves<=0)) # up to condition
+	}
+	
+	if(condition){
 		 g = c(g,game_state$winner)
 		 return(g)
 	}else{
 		index_positions = which(m == 0) # open slot on the game board/ vector of open 
 
-		for(i in 1:n_moves)
+		for(i in 1:length(index_positions))
 		{
 		  x=m
-		# pick next position randomly from uniform distribution from open positions
-			picked_index=index_positions[i]#sample(index_positions,1)
+			picked_index=index_positions[i]
 			
 			x[picked_index] = k # player's turn
 			
-			if((strict==F && rho(x,S)$terminal) ){ #at most n_move condition 
-			  return(g)
-			  break
-			}else{
 			g  =c(g, game_tree_mod(x,-1*k,n_moves-1,n_sim=1) )
-			}
 			
 		}
 		}
@@ -890,11 +904,6 @@ game_tree_mod= function(m,k,n_moves,n_sim=1,strict=T) # n_moves- given mumber of
 	}
 
 
-#Test the above
-# game statuses for 
-
-m0=as.matrix(rep(0,9))
-#game_tree_mod(m0,-1,8,strict=F)
 
 
 ```
@@ -905,38 +914,65 @@ m0=as.matrix(rep(0,9))
 m0=as.matrix(rep(0,9))# open board
 
 
-game_Ts_5=game_tree_mod(m0,1,5,strict=T)
+game_Ts_5=game_tree_mod(m0,1,n_moves=5,strict=T) # Ts for exactly 5 moves
 num_Ts_5=length(game_Ts_5)
-num_wins_5=length(which(game_Ts_5!=0))
+num_wins_5=length(which( (game_Ts_5==1)|(game_Ts_5==-1)   )) # across players
 num_wins_5;length(game_Ts_5) # player 1 wins all the time if moves are constrained to 5 in total, 12 wins across trajectories
 
 ```
 
-```{r,n_moves_8}
+```{r,n_moves_8,eval=T}
 m0=as.matrix(rep(0,9))# open board
 
-game_Ts_8=game_tree_mod(m0,1,8,strict=T)
+game_Ts_8=game_tree_mod(m0,1,n_moves=8,strict=T) #  Ts for exactly 8 moves
 num_Ts_8=length(game_Ts_8)
-num_wins_8=length(which(game_Ts_8!=0))
+num_wins_8=length(which( (game_Ts_8==1)|(game_Ts_8==-1)   )) # just wins for either player
 num_wins_8;length(game_Ts_8) ;num_wins_8/length(game_Ts_8)
 
 # players 89% of the time when moves are constrained to 8 excatly
 # Player one vs player 2:
-length(which(game_Ts_8==1));length(which(game_Ts_8==-1))
 # player 1 wins 10.5K times, player 2 wines 9K times
 ```
 
-```{r,n_moves_up_to_8}
+```{r,n_moves_up_to_8,eval=T}
 
 m0=as.matrix(rep(0,9))# open board
-game_Ts_atmost_8=game_tree_mod(m0,1,8,strict=F)
+game_Ts_atmost_8=game_tree_mod(m0,1,n_moves=8,strict=F) # up to 8 moves
 num_Ts_atmost_8=length(game_Ts_atmost_8)
-num_wins_atmost_8=length(which(game_Ts_atmost_8!=0))
-num_wins_8;length(game_Ts_atmost_8) ;num_wins_8/length(game_Ts_8)
-length(which(game_Ts_atmost_8==1));length(which(game_Ts_atmost_8==-1))
-# Same as before :()
-# better to be starting 
+num_wins_atmost_8=length(which( (game_Ts_atmost_8==1)|(game_Ts_atmost_8==-1)   ))
+num_wins_atmost_8
+pl_1_num_wins_atmost_8=length(which(game_Ts_atmost_8==1))
+pl_2_num_wins_atmost_8=length(which(game_Ts_atmost_8==-1))
+
 ```
+
+```{r,summ_tab}
+
+game_config=c('5 exact moves','8 exact moves')
+metrics=c('Number of Game Trajectories','Total Wins')
+total_game_trajectories=c(num_Ts_5,num_Ts_8)
+total_wins=c(num_wins_5,num_wins_8)
+
+summ_df=data.frame(rbind(total_game_trajectories,total_wins))
+colnames(summ_df)=game_config
+rownames(summ_df)=metrics
+summ_df
+#kable(summ_df)
+
+
+# Up to 8 moves
+players=c('player 1','player 2')
+wins=c(pl_1_num_wins_atmost_8,pl_2_num_wins_atmost_8)
+win_percentage=c(pl_1_num_wins_atmost_8,pl_2_num_wins_atmost_8)/num_Ts_atmost_8
+
+summ_df2=data.frame(wins)
+rownames(summ_df2)=players
+summ_df2$as_percentage_trajectories=round(win_percentage,4)
+summ_df2
+
+```
+
+Player 2 wins 19% of total game trajectories when the game is adjusted for up to 8 moves; it's better to play second.
 
 b\)
 
