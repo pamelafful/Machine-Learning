@@ -79,7 +79,7 @@ library(e1071)
 
 a\)
 
-```{r}
+```{r uni_set_up, eval=T, include=FALSE}
 #rm(list = ls())
 #========================================================================
 #                 1. Set up a game universe (Encoding)
@@ -126,16 +126,14 @@ plot_game(xt,objects,rad,'black')
 
 ```
 
-```{r,param_set_up,echo=T,}
-set.seed(2024)
+#### Game Status
 
+```{r,initial_param2,eval=T,include=F,echo=F}
+set.seed(2024)
 outer_rad=1
 inner_rad=0.25
 
 J       =   50 # num trees/objects to avoid
-# o1      =   runif(J,-outer_rad,outer_rad)  # x-coordinates of objects
-# o2      =   runif(J,-outer_rad,outer_rad)  # y-coordinates of objects
-
 r_o       =  runif(J,0.3,1)
 pi_vals   =  runif(J,-1,1)*pi
 o1        =  r_o*cos(pi_vals)     # x-coordinates of objects
@@ -161,15 +159,19 @@ draw_starts = function(N = 1)
 # Initialize xt such that it is in the starting position inside the inner circle
 x0=draw_starts(1)
 
+```
+
+```{r,param_set_up,echo=T,}
+set.seed(2024)
 
 game_status = function(xt, objects, rad, center = matrix(c(0,0), nrow=1, ncol=2), outer_rad = 1)
 {
   J        = nrow(objects)
   ones     = matrix(1, J, 1)
-  dists    = sqrt(rowSums((objects - ones %*% xt)^2)) # distance btwn dron and ALL obj
-  min_dist = min(dists)
+  dists    = sqrt(rowSums((objects - ones %*% xt)^2)) # distance btwn drone and ALL obj
+  min_dist = min(dists) # dist to closest tree
 
-  outer_circle_point_dist = sqrt(sum((center - xt)^2))
+  outer_circle_point_dist = sqrt(sum((center - xt)^2)) # distance between circle center and drone
 
   if (min_dist < rad) {
     status = -1                      # hit a tree/obj
@@ -184,34 +186,17 @@ game_status = function(xt, objects, rad, center = matrix(c(0,0), nrow=1, ncol=2)
 
 #game_status(x0, objects, rad, center = matrix(c(0,0), nrow=1, ncol=2), outer_rad = 1)
 
-
-
-#Alt Initializations
-# outer_rad=1
-# inner_rad=0.25
-# 
-# J       =   50 # num trees/objects to avoid
-# o1      =   runif(J,-outer_rad,outer_rad)  # x-coordinates of objects
-# o2      =   runif(J,-outer_rad,outer_rad)  # y-coordinates of objects
-# objects =  cbind(o1,o2)
-# inner_rad=0.25
-# outer_rad=1
-# delt    =  0.025            # How big are the steps you can take?
-# rad     =  0.05 # How close to an object before you crash
-# x0=matrix(cbind(runif(1,inner_rad**2,2*(inner_rad)**2),runif(1,inner_rad**2,2*(inner_rad)**2)),nrow=1,ncol=2)
-
-
-# Initialize xt such that it is in the starting position inside the inner circle
-
 ```
 
 #### b) Experimental Setup 1
+
+**i)**
 
 ```{r,game_exp_1,echo=T}
 
 #| layout-ncol: 2
 #| fig-subcap: 
-#|   - "GA Parameter Trace Plot"
+#|   - "GA Parameter Search Trace Plot"
 #|   - "Trajectories over 100 initial positions"
 
 set.seed(2024)
@@ -298,7 +283,7 @@ plot_game = function(xt,objects,rad,center=matrix(c(0,0),nrow=1,ncol=2),inner_ra
 }
 
 
-#######################################
+####################################### game_play
 
 # play a single game
 
@@ -355,8 +340,6 @@ play_T_games = function(theta) # This is our obj function!
   
 	 # num trees/objects to avoid
   score=0
-
-	
 	for(i in 1:T_games)
 	{
   objects =  objects # keeo constant for now
@@ -369,16 +352,13 @@ play_T_games = function(theta) # This is our obj function!
   return(score/T_games) # objective to maximise
 }
 
-
-
-
-
-
-
 ###################GA function to get weights################
 # Use GA function 
 
 library('GA')
+
+# Read saved RDS From GA code below
+
 # GA <- ga(type   = 'real-valued',
 # 	      fitness = play_T_games, # used here to get the optimal theta
 # 	      lower   = rep(-10,npars), # lower bound vector
@@ -391,10 +371,9 @@ library('GA')
 #saveRDS(GA,file='ga_results2.rds')
 GA=readRDS('ga_results2.rds')
 plot(GA)
-# note  @solution to get optimal thet
 theta_opt=GA@solution[1,]
 
-
+# Draw race over 100 random starts
 tries=draw_starts(100)
 center=c(0,0)
 
@@ -433,12 +412,14 @@ for(i in 1:dim(tries)[1]){
 # %Successful exits
 sr=(length(which(scores==1))/length(scores))*100 #98%
 
-text(x = 1.5, y = 1.5, labels = paste("Succ Rate:~",round(sr,3),'%'), col = "darkblue", cex = 1.2, font = 2)
+text(x = 1.5, y = 1.5, labels = paste("Succ Rate:~",round(sr,3),'%'), col = "darkblue", cex = 1, font = 1)
 
 
 
 
 ```
+
+**ii)**
 
 ```{r,new_draw}
 
@@ -504,7 +485,7 @@ for(i in 1:dim(tries)[1]){
 # %Successful exits
 sr=round( (length(which(scores==1))/length(scores)),3)
 
-text(x = 1.5, y = 1.5, labels = paste("Succ Rate:~",sr), col = "darkblue", cex = 1.2, font = 2)
+text(x = 1.5, y = 1.5, labels = paste("Succ Rate:~",sr), col = "darkblue", cex = 1, font = 1)
 
 
 
@@ -512,26 +493,18 @@ text(x = 1.5, y = 1.5, labels = paste("Succ Rate:~",sr), col = "darkblue", cex =
 
 ```
 
-iii\) Comments for the first 2 experiments:
+**iii) Key Observations:**
 
 -   The drone has a near perfect success rate at escaping the forest and the learned weights have learnt how to get around a specific configuration of forest across starting positions
 
--   However, with a new configuration of trees, the drones success rate plummets to 0, indicating that the initial model/weights were highly overfit for a specific distributions of tress across the field. The model has not learnt a general pattern of how to escape the field (across configurations).\
+-   However, with a new configuration of trees, the drones success rate plummets to 0, indicating that the initial model/weights were highly overfit for a specific distributions of tress across the field. Apart from hitting the objects, most of the drone's trajectories do not make it out of the outer circle in the given number of iteration steps (100). The model has not learnt a general pattern of how to escape the field (across object configurations).
 
 #### c) Experimental Setup 2
 
-i\)
+**i)**
 
 ```{r,mod_nn,echo=T,eval=T}
 
-# # Test
-# x0
-# d_min0=play_a_game(x0,delt,objects,rad,theta_opt,plt = TRUE,trace = TRUE,nodes,inner_rad=0.25,outer_rad=1)$dmin
-# r=rad
-# 
-# add_arg0=matrix((1/(d_min0-r)),ncol=1,nrow=1)
-
-# Modified NN
 
 model_2 = function(xt_input, theta, nodes = c(3,3),add_arg) #add_arg= 1/(dmin-r)
 {
@@ -625,7 +598,7 @@ play_a_game_mod = function(xt,delt,objects,rad,theta,plt = F,trace = TRUE,nodes=
 
 ```
 
-ii\)
+**ii)**
 
 ```{r,plot_exp_2}
 
@@ -693,15 +666,15 @@ for(i in 1:dim(tries)[1]){
 # %Successful exits
 sr=round( (length(which(scores==1))/length(scores)),3)
 
-text(x = 1.5, y = 1.5, labels = paste("Succ Rate:~",sr), col = "darkblue", cex = 1.2, font = 2)
+text(x = 0.9, y = 1.5, labels = paste("Succ Rate:~",sr), col = "darkblue", cex = 1, font =1)
 
 ```
 
-The model has an improved success rate of 17% for a new configuration of trees using the distance-augmented model (using the same optimized parameters). The model has adopted some general pattern of avoiding trees, although it still has some noticeable room for improvement.
+The model has an improved success rate of 17% for a new configuration of trees using the distance-augmented model (using the same optimized parameters). The model has adopted a slightly better pattern of avoiding trees, although it still has some noticeable room for improvement. Once again, there are a noticeable number of trajectories that do not make it out of the outer circle in the given number of iterations.
 
 #### d) Experimental Setup 3
 
-```{r,vary_tree_start}
+```{r,vary_tree_start,fig.width=6,echo=T}
 
  # modified to make a new draw and tree config
 play_a_game_mod2 = function(delt,rad,theta,plt = F,trace = TRUE,nodes=c(3,3),inner_rad=0.25,outer_rad=1)
@@ -758,7 +731,7 @@ play_a_game_mod2 = function(delt,rad,theta,plt = F,trace = TRUE,nodes=c(3,3),inn
 
 # Results
 set.seed(46)
-plot(NULL, xlim=c(-2,2),ylim=c(-2,2),xlab='position coord 1',ylab='position coord 2',main='Trace Plot for 100 Trajectories: Variying Inital Starts and Tree Configs')
+plot(NULL, xlim=c(-2,2),ylim=c(-2,2),xlab='position coord 1',ylab='position coord 2',main='100 Trajectories: Varying Initial Starts and Tree Configs')
 
   thetas = seq(0, 2 * pi, length.out = 200)
 
@@ -791,7 +764,7 @@ for(i in 1:dim(tries)[1]){
 # %Successful exits
 sr=round( (length(which(scores==1))/length(scores)),3)
 
-text(x = 1.5, y = 1.5, labels = paste("Succ Rate:~",sr), col = "darkblue", cex = 1.2, font = 2)
+text(x = 0.9, y = 1.5, labels = paste("Succ Rate:~",sr), col = "darkblue", cex = 1, font = 1)
 
 
 
@@ -799,13 +772,13 @@ text(x = 1.5, y = 1.5, labels = paste("Succ Rate:~",sr), col = "darkblue", cex =
 
 ```
 
-The success rate has shown a better improvement across variations of the tree configurations and starting points, with a success rate of 26%. \*comeback
+The success rate has shown a better improvement across variations of the tree configurations and starting points, with a success rate of 26%. There is slight inprovement in generalization for the optimized set of weights.
 
-### Question 2
+# Monte Carlo Tree Search 
 
-a\)
+**a)**
 
-```{r,eval=T}
+```{r,game_tree_orig,eval=T,echo=F,include=F}
 rm(list = ls())
 game_tree= function(m,k)
 {
@@ -828,8 +801,7 @@ game_tree= function(m,k)
 }
 ```
 
-```{r,mc_search}
-
+```{r,game_tree_helpr_func,eval=T,echo=F,include=F}
 # Define game status
 
 
@@ -864,6 +836,11 @@ rho = function(m,S)
   ret      = list(terminal = terminal,winner = winner)
   return(ret)
 }
+
+```
+
+```{r,mc_search,echo=T}
+
 
 # m0 = as.matrix(c(0,0,0,0,0,0,0,0,0)) # current game board/flattened
 # c(rho(m0,S)$winner ,1)
@@ -903,12 +880,9 @@ game_tree_mod= function(m,k,n_moves,strict=F,n_sim=1) #n_moves=target moves
 	}
 	}
 
-
-
-
 ```
 
-```{r,n_moves_5}
+```{r,n_moves_5,echo=F,include=F,eval=T}
 
 # Number wins in 5 moves
 m0=as.matrix(rep(0,9))# open board
@@ -921,7 +895,7 @@ num_wins_5;length(game_Ts_5) # player 1 wins all the time if moves are constrain
 
 ```
 
-```{r,n_moves_8,eval=T}
+```{r,n_moves_8,eval=T,echo=F,include=F}
 m0=as.matrix(rep(0,9))# open board
 
 game_Ts_8=game_tree_mod(m0,1,n_moves=8,strict=T) #  Ts for exactly 8 moves
@@ -934,7 +908,7 @@ num_wins_8;length(game_Ts_8) ;num_wins_8/length(game_Ts_8)
 # player 1 wins 10.5K times, player 2 wines 9K times
 ```
 
-```{r,n_moves_up_to_8,eval=T}
+```{r,n_moves_up_to_8,eval=T,echo=F,include=F}
 
 m0=as.matrix(rep(0,9))# open board
 game_Ts_atmost_8=game_tree_mod(m0,1,n_moves=8,strict=F) # up to 8 moves
@@ -946,19 +920,23 @@ pl_2_num_wins_atmost_8=length(which(game_Ts_atmost_8==-1))
 
 ```
 
-```{r,summ_tab}
+```{r,summ_tab,echo=F}
 
 game_config=c('5 exact moves','8 exact moves')
-metrics=c('Number of Game Trajectories','Total Wins')
+metrics=c('#Game Trajectories','Total Wins')
 total_game_trajectories=c(num_Ts_5,num_Ts_8)
 total_wins=c(num_wins_5,num_wins_8)
 
 summ_df=data.frame(rbind(total_game_trajectories,total_wins))
 colnames(summ_df)=game_config
 rownames(summ_df)=metrics
-summ_df
-#kable(summ_df)
+kable(summ_df,caption = "Total Wins: 5 vs 8 move game (exact)" )
 
+
+
+```
+
+```{r,summ_tab2,echo=F}
 
 # Up to 8 moves
 players=c('player 1','player 2')
@@ -967,16 +945,17 @@ win_percentage=c(pl_1_num_wins_atmost_8,pl_2_num_wins_atmost_8)/num_Ts_atmost_8
 
 summ_df2=data.frame(wins)
 rownames(summ_df2)=players
-summ_df2$as_percentage_trajectories=round(win_percentage,4)
-summ_df2
+summ_df2$percentage=round(win_percentage,4)
+kable(summ_df2,caption = "Player Wins For (up to) 8 move game")
 
 ```
 
-Player 2 wins 19% of total game trajectories when the game is adjusted for up to 8 moves; it's better to play second.
+**Player 2 wins 19%** of total game trajectories when the game is adjusted for up to 8 moves; in this set up it's better to play second.
 
-b\)
+**b)**
 
-```{r,mcts}
+```{r,mcts,echo=T}
+
 mcts= function(m,k,alpha,n_sim=1) 
 {
 	
@@ -1011,59 +990,45 @@ mcts= function(m,k,alpha,n_sim=1)
 	}
 
 
-#Test the above
-# game statuses for 
+# Table Summ
 
+cols=c('Pl 1 Win %','Pl 2 Win %','Ties %')
+alphas_=c(0.95,1)
+
+m0=as.matrix(c(+1, +1, 0, 0, 0, 0, 0,0,-1))
+
+pl_1_wins=c()
+pl_2_wins=c()
+ties=c()
+for(alph in alphas_ ){
+  if(alph!=1){
+  g_sample=mcts(m0,-1,alph)
+  }else{
+    g_sample=game_tree(m0,-1)
+  }
+  
+  num_traj=length(g_sample)
+  num_wins_player1=round( (length(  which(g_sample==-1))/num_traj),4)
+  num_wins_player2=length( which(g_sample==1))/num_traj
+  num_ties=length(which(g_sample==0))/num_traj
+  pl_1_wins=c(pl_1_wins,num_wins_player1)
+  pl_2_wins=c(pl_2_wins,num_wins_player2)
+  ties=c(ties,num_ties)
+}
+
+mcts_freq=data.frame(cbind(  round(pl_1_wins,4), round(pl_2_wins,4),round(ties,4) ))
+rownames(mcts_freq)=alphas_
+colnames(mcts_freq)=cols
+kable( mcts_freq,
+  caption="Relative Frequencies Comparison")
 
 
 ```
 
-```{r,compare_mcts}
+At $\alpha=0.95$, the estimated frequencies are relatively close to those of the full game tree, which is expected as alpha is fairely close to recovering the true frequencies from the whole game tree ( $\alpha=1$).
 
-m0=as.matrix(c(+1, +1, 0, 0, 0, 0, 0, 0,-1))
+```{r,simulation,echo=T}
 
-g_sample=mcts(m0,-1,0.95)
-
-num_traj=length(g_sample)
-num_wins_player1=length(  which(g_sample==-1))
-num_wins_player2=length( which(g_sample==1))
-num_wins_ties=length(which(g_sample==0))
-
-num_wins_player1/num_traj;num_wins_player2/num_traj;num_wins_ties/num_traj
-
-
-# True values
-
-print('####True Values from mod function#####')
-
-g_true=game_tree_mod(m0,-1,6,n_sim=1,strict=T)
-
-num_traj=length(g_true)
-num_wins_player1=length(  which(g_true==-1))
-num_wins_player2=length( which(g_true==1))
-num_wins_ties=length(which(g_true==0))
-
-num_wins_player1/num_traj;num_wins_player2/num_traj;num_wins_ties/num_traj
-
-print('####using game tree%%%')
-
-g_true=game_tree(m0,-1)
-
-num_traj=length(g_true)
-num_wins_player1=length(  which(g_true==-1))
-num_wins_player2=length( which(g_true==1))
-num_wins_ties=length(which(g_true==0))
-
-num_wins_player1/num_traj;num_wins_player2/num_traj;num_wins_ties/num_traj
-
-# Estimates are fairely close with the true values
-
-```
-
-```{r,simulation}
-
-
-#| label: fig-subplots
 #| fig-cap: "Relative Game Frequencies"
 #| fig-subcap: 
 #|   - "Distribution of Player 1 Win Freq"
@@ -1086,6 +1051,7 @@ for(i in 1:N_sim){
   G_alpha_9[i,3]=tie_per
 }
 
+#0.7
 
 G_alpha_7=matrix(NA,nrow=N_sim,ncol=3)
 for(i in 1:N_sim){
@@ -1129,8 +1095,7 @@ G_all$alpha=as.character(G_all$alpha)
 
 
 
-
-# All simulations for different alphas
+# Plot All simulations for different alphas
 # Player 1 wins
 G_all %>% ggplot(aes(y=Player_1_Win_Freq,col=alpha))+
   geom_boxplot()+
@@ -1175,11 +1140,19 @@ G_all %>% ggplot(aes(y=Tie_Freq,col=alpha))+
 
 ```
 
-Key Obs: Median Freq for alpha=0.7 much closer to the true relative freq. Tighter spread across the median- lower degree of variation compared to alpha=0.7. - makes sense since we are closer to searching all branches with higher alpha.
+**Key Observations:**
 
-#### Soft- Margin SVM
+-   Across box plots for the three relative frequencies, the distributions about the median for are tighter for $\alpha=0.9$, compared to $\alpha=0.7$. There is less variation in the frequency estimates across simulations for alpha values closer to 1 (the full game tree).
 
-```{r,soft_marg_svm}
+-   As expected, the median relative frequencies across all distributions are also closer to their corresponding true values at the higher $\alpha$ value.
+
+-   **Conclusion**: The higher the $\alpha$ parameter, the closer MCTS is at recovering the full game's true realtive frequencies.
+
+# Soft-Margin SVM
+
+**a)**
+
+```{r,soft_marg_svm,echo=T}
 
 # kernal function to use the polynomial kernal trick
 KK = function(X1,X2,cf,gm,dg)
@@ -1244,7 +1217,7 @@ my_svm=function(y,X,poly,Cost=10000){ # poly- vector of polynomial arguments c(g
        yhat = sign(T1+intercept[1])
 
        # return list of a,weights,intercept,yhat
-       ret=list(alphas=pad.a,ww=ww,intercept=intercept,yhat=yhat)
+       ret=list(alphas=a,ww=ww,intercept=intercept,yhat=yhat)
   
       return(ret)
 }
@@ -1252,56 +1225,90 @@ my_svm=function(y,X,poly,Cost=10000){ # poly- vector of polynomial arguments c(g
 
 ```
 
-```{r,pla_read}
+```{r,pla_read,eval=T,include=F,echo=F}
+
 plm_data=read.delim("PLA_Dynamics", header = TRUE,sep='')
 
+```
+
+**b)**
+
+```{r,svm_comp,echo=F}
 y=plm_data$Y
 x1=plm_data$X1
 x2=plm_data$X2
 X=cbind(x1,x2)
-poly=c(1,1,2)
+poly=c(0.8,1,3)
 
 # Test my_svm
-res=my_svm(y,X,poly,Cost=10000)
+res=my_svm(y,X,poly,Cost=100)
+
 #SV alpha coeff!=0
 # Nr of SV
-my_sv_coeff=which(round(res$alpha,3)>1e-6) #alpha greater than tolerance
-dim(X[my_sv_coeff,])
+my_sv_coeff=which(res$alpha>1e-6) #alpha greater than tolerance
+my_mod_sv=dim(X[my_sv_coeff,])[1]
 
-
-```
-
-a\)
-
-```{r,svm_com}
-
-poly=c(1,1,2)
 
 
 gm = poly[1] # coeff
 cf = poly[2] #constant
 dg = poly[3] # order of polynomial
 
-model  = svm(X,y, cost = 10000, kernel = 'polynomial',  coef0 = cf, degree = dg, gamma = gm,scale =F,type="C-classification")
+model  = svm(X,y, cost = 100, kernel = 'polynomial',  coef0 = cf, degree = dg, gamma = gm,scale =F,type="C-classification")
  
  
 svm_Sv=model$SV
-svm_Sv
+svm_nr_SV=dim(svm_Sv)[1]
 ```
 
 ```{r,sv_plots}
-# MY SVs
+
+#| fig-cap: "QP SVM vs SVM Function"
+#| fig-subcap: 
+#|   - "QP Support Vectors"
+#|   - "SVM Support Vectors"
+#| layout-ncol: 2
+
+
 a   = res$alpha[my_sv_coeff]
-plot(x2~x1,pch = c(1,16)[(y+1)/2+1])
-points(x2[my_sv_coeff]~x1[my_sv_coeff], pch = 1,col = 'red',cex=2)
+plot(x2~x1,pch = c(1,16)[(y+1)/2+1],main='Manual QP SVM Solution')
+points(x2[my_sv_coeff]~x1[my_sv_coeff], pch = 1,col = 'darkred',cex=2)
+text(x = 10, y = 10, labels = paste("#SV:",my_mod_sv), col = "darkblue", cex = 1, font = )
  
 # SVM SVs
-plot(x2~x1,pch = c(1,16)[(y+1)/2+1])
-points(svm_Sv[,'x1']~svm_Sv[,'x2'], pch = 1,col = 'blue',cex=2)
+plot(x2~x1,pch = c(1,16)[(y+1)/2+1], main='SVM Package Solution')
+points(svm_Sv[,'x2']~svm_Sv[,'x1'], pch = 1,col = 'blue',cex=2)
+text(x = 10, y = 10, labels = paste("#SV:",svm_nr_SV), col = "darkblue", cex = 1, font = )
+
 
 ```
 
-```{r,plot_check}
+Hyperparameters: **cost=100\*, degree=3, gamma=1, coefficient=1.**
+
+The number of support vectors found by the two methods equals 7. There is also an overlap with the data point support vectors found by the QP method and the svm package function i.e., all the support vectors from the former method are contained in the latter method and vice versa. \
+\*The svm function ran out of iterations for higher cost values, which results in suboptimal solutions.
+
+# Appendix {.appendix}
+
+#### Question 1 Code
+
+```{r,ref.label=c('uni_set_up','initial_param2','param_set_up','game_exp_1','new_draw','mod_nn','vary_tree_start'), eval=FALSE, echo=TRUE}
+
+```
+
+**Question 2 Code**
+
+```{r,ref.label=c('game_tree_orig','game_tree_helpr_func','mc_search','n_moves_5','n_moves_8','n_moves_up_to_8','summ_tab','summ_tab2','mcts','simulation'), eval=FALSE, echo=TRUE}
+
+```
+
+**Question 3 Code**
+
+```{r,ref.label=c('soft_marg_svm','pla_read','svm_comp','sv_plots'), eval=FALSE, echo=TRUE}
+
+```
+
+```{r,plot_check,include=F,eval=F}
 # plot a circle in r
 #set.seed(123)
 theta = seq(0, 2 * pi, length.out = 200)
